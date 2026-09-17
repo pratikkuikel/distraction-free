@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.2.0) — creates it if it doesn't exist"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build dfdaemon + dfmenubar (release)
+        run: swift build -c release --package-path macos
+
+      - name: Stage release bundle
+        run: |
+          STAGE=distraction-free-macos
+          mkdir -p "$STAGE"
+          cp macos/.build/release/dfdaemon "$STAGE/"
+          cp macos/.build/release/dfmenubar "$STAGE/"
+          cp macos/Scripts/run-daemon.sh "$STAGE/"
+          cp macos/Scripts/update-blocklist.sh "$STAGE/"
+          cp macos/Scripts/install-release.sh "$STAGE/"
+          cp macos/LaunchDaemons/com.distractionfree.daemon.plist "$STAGE/"
+          cp macos/LaunchDaemons/com.distractionfree.blocklist-update.plist "$STAGE/"
+          cp shared/social-domains.txt "$STAGE/"
+          cp shared/quotes.txt "$STAGE/"
+          chmod +x "$STAGE"/*.sh
+          zip -r distraction-free-macos.zip "$STAGE"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distraction-free-macos
+          path: distraction-free-macos.zip
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Resolve version from tag
+        id: version
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "name=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "code=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Decode release keystore
+        working-directory: android
+        run: echo "${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+
+      - name: Build signed release APK
+        working-directory: android
+        env:
+          ANDROID_RELEASE_KEYSTORE_PATH: release.keystore
+          ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+          ANDROID_VERSION_NAME: ${{ steps.version.outputs.name }}
+          ANDROID_VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Clean up keystore
+        if: always()
+        working-directory: android
+        run: rm -f release.keystore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distraction-free-android
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+  release:
+    needs: [build-macos, build-android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: distraction-free-macos
+      - uses: actions/download-artifact@v4
+        with:
+          name: distraction-free-android
+
+      - name: Rename Android artifact
+        run: mv app-release.apk distraction-free-android.apk
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          files: |
+            distraction-free-macos.zip
+            distraction-free-android.apk

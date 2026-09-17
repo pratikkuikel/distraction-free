@@ -51,7 +51,26 @@ never block WhatsApp).
 - `shared/` — the hand-maintained social-media domain list both platforms use
 - `docs/` — MVP scope, privacy, troubleshooting
 
-## Setup
+## Download
+
+Prebuilt installers are attached to each [GitHub Release](../../releases) — no Xcode or Android
+Studio required:
+
+- **macOS:** download `distraction-free-macos.zip`, unzip it, then run `./install-release.sh` from
+  inside the extracted folder (asks for your password once, to install the LaunchDaemon and point
+  your Mac's DNS at it). Since the binaries aren't notarized (no Apple Developer account), the script
+  clears the Gatekeeper quarantine flag itself.
+- **Android:** download `distraction-free-android.apk`, enable "Install unknown apps" for your
+  browser/file manager, and install it. Grant the VPN permission when prompted, and — for real
+  bypass-resistance — enable **Settings → VPN → Always-on VPN + Block connections without VPN** for it
+  manually. Every release is signed with the same key, so installing a new version over an old one
+  updates in place and keeps your streak/stats data; only switching between a locally-built debug APK
+  and a signed release build requires a one-time uninstall.
+
+New releases build automatically from a git tag (`vX.Y.Z`) via
+[`.github/workflows/release.yml`](.github/workflows/release.yml).
+
+## Setup from source
 
 **macOS:** `cd macos && ./Scripts/install.sh` (builds in release mode, asks for your password once
 to install the LaunchDaemon and point your Mac's DNS at it).
