@@ -1,26 +1,68 @@
 # distraction-free
 
 Local-only, open-source content blocker for macOS + Android. No backend, no accounts, no sync.
-Blocks adult content, gambling, piracy, and other distraction categories at the network level, always-on,
-with an uninstall path that's deliberately slow instead of deliberately impossible.
+Blocks adult content, gambling, piracy, and VPN/proxy/DNS-bypass at the DNS level, always-on;
+social media is blocked nightly (8pm–9am) with a manual daytime toggle; communication apps
+(WhatsApp, Messenger, Telegram, Botim) are always exempt. Uninstall is deliberately slow, not
+deliberately impossible.
+
+## How it works
+
+**macOS** — `dfdaemon` is a small local DNS resolver (Swift, raw UDP sockets, a reversed-label trie
+for O(number of labels) domain lookups regardless of blocklist size) bound to `127.0.0.1:53`,
+installed as a root LaunchDaemon. The Mac's system DNS is pointed at it. Blocked domains get
+NXDOMAIN; SafeSearch domains get rewritten to their forced-safe-search IP (resolved live, not
+hardcoded, since some providers' addresses rotate); everything else is forwarded to whatever DNS
+servers your network already had configured. `dfmenubar` is a SwiftUI menu-bar app showing status
+and the disable/toggle controls — it talks to the daemon only through shared JSON state files, never
+directly, so it can stay fully unprivileged.
+
+**Android** — `BlockerVpnService` is a full-capture local VPN (Kotlin). It has to capture *all*
+traffic, not just DNS — Android gives a captured app no fallback route to the real network for
+anything the VPN doesn't explicitly route, so a DNS-only VPN would silently kill the rest of the
+device's connectivity. DNS (UDP/53) gets the block/allow/SafeSearch logic; everything else is
+relayed transparently through a minimal userspace TCP/UDP NAT (`TcpNat.kt` / `UdpNat.kt`) so normal
+browsing keeps working. WhatsApp/Messenger/Telegram/Botim are excluded from the VPN entirely via
+`addDisallowedApplication`.
+
+Both platforms load the same category rules from the same blocklist sources — HaGeZi's hosted lists
+for adult/gambling/piracy/bypass, and this repo's own hand-maintained `shared/social-domains.txt`
+for social media (needs per-platform precision a generic list can't give: block Instagram's feed,
+never block WhatsApp).
 
 ## Design principles
 
 - **Local only.** No server, no account, no telemetry leaving the device.
-- **System-level, not browser-level.** A Network Extension (macOS) / VpnService (Android) filters DNS
-  for every app, not just a browser with an extension installed.
-- **Always-on.** No schedule window in v1 — categories are blocked continuously.
+- **DNS-level, not browser-level.** Filters every app on the device, not just a browser extension.
+- **Category-specific scheduling.** Adult/gambling/piracy/bypass/SafeSearch: always-on, no toggle.
+  Social media: hard-blocked 8pm–9am, open the rest of the day with a manual "block now" toggle.
 - **Friction, not fantasy.** You have root/admin on your own device, so nothing here claims to be
-  tamper-proof against yourself. Removal works, but requires a deliberate multi-step cooldown
-  (see `docs/uninstall-friction.md`) instead of a single click, so a 2am impulse can't undo it.
-- **Minimal data.** Category-match counts only, never visited URLs or browsing history.
+  tamper-proof against yourself. The in-app "disable" button logs the attempt and shows a 24h
+  countdown that never actually completes, by design — the only real way off is outside the app
+  (see `docs/troubleshooting.md#uninstalling`).
+- **Minimal data.** Category-match counts only, never visited URLs or browsing history — see
+  `docs/privacy.md`.
 
 ## Structure
 
-- `macos/` — Network Extension + LaunchDaemon
-- `android/` — VpnService-based local DNS filter
-- `docs/` — blocklist sourcing, uninstall-friction design, category list
+- `macos/` — `dfdaemon` (the DNS resolver), `dfmenubar` (SwiftUI status/control UI), LaunchDaemon
+  plist, install + blocklist-update scripts
+- `android/` — VpnService-based filter + TCP/UDP relay, sideloaded APK (no Play Store)
+- `shared/` — the hand-maintained social-media domain list both platforms use
+- `docs/` — MVP scope, privacy, troubleshooting
+
+## Setup
+
+**macOS:** `cd macos && ./Scripts/install.sh` (builds in release mode, asks for your password once
+to install the LaunchDaemon and point your Mac's DNS at it).
+
+**Android:** open `android/` in Android Studio, build and install the debug APK, grant the VPN
+permission when prompted, and — for real bypass-resistance — enable **Settings → VPN → Always-on VPN
++ Block connections without VPN** for it manually.
 
 ## Status
 
-Planning stage. See `docs/mvp-plan.md`.
+MVP built and smoke-tested: DNS blocking, subdomain matching, forwarding, and SafeSearch rewriting
+are verified working on both platforms. Full page-load testing on Android was constrained by the
+dev sandbox's emulator networking (see commit history / session notes) rather than the app itself —
+worth a real-device pass before relying on it daily.

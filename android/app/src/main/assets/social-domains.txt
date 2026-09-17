@@ -1,0 +1,29 @@
+# Hand-maintained social-media feed/content domains — scheduled block
+# (20:00-09:00 daily forced, toggleable 09:00-20:00), NOT from HaGeZi.
+# Communication apps (WhatsApp, Messenger, Telegram, Botim) are deliberately
+# never listed here — see docs/mvp-plan.md for the reasoning.
+#
+# Format: same as the always-on lists — one domain per line, blocking it
+# and all its subdomains. "*." prefix optional, stripped either way.
+
+instagram.com
+cdninstagram.com
+tiktok.com
+tiktokcdn.com
+tiktokv.com
+x.com
+twitter.com
+twimg.com
+facebook.com
+fbcdn.net
+snapchat.com
+sc-cdn.net
+reddit.com
+redditstatic.com
+redditmedia.com
+youtube.com
+youtube-nocookie.com
+ytimg.com
+youtu.be
+linkedin.com
+licdn.com
