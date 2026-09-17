@@ -61,6 +61,7 @@ class BlockerVpnService : VpnService() {
     private var tcpNat: TcpNat? = null
     private var udpNat: UdpNat? = null
     @Volatile private var upstreamDnsServers: List<InetAddress> = emptyList()
+    @Volatile private var underlyingNetwork: Network? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -105,6 +106,7 @@ class BlockerVpnService : VpnService() {
             .setSession("Distraction Free")
             .setBlocking(true)
         AppExemptions.applyTo(builder, packageManager)
+        underlyingNetwork?.let { builder.setUnderlyingNetworks(arrayOf(it)) }
 
         vpnInterface = builder.establish() ?: return
         running.set(true)
@@ -161,6 +163,17 @@ class BlockerVpnService : VpnService() {
             return
         }
 
+        // Social-block check runs before SafeSearch: youtube.com is in both
+        // lists (needs SafeSearch when open, hard-blocking when not), and
+        // checking SafeSearch first meant the bare domain could never
+        // actually be blocked during the nightly window — only its
+        // subdomains (ytimg.com etc.) were. Blocked wins.
+        if (schedule.isSocialBlockedNow() && socialTrie.isBlocked(domain)) {
+            stats.recordBlockedSocial()
+            writeResponse(packet, DnsMessage.nxdomainResponse(query), output)
+            return
+        }
+
         SafeSearch.targets[domain]?.let { target ->
             stats.recordSafeSearchRewrite()
             val addr = SafeSearch.resolve(target)
@@ -169,12 +182,6 @@ class BlockerVpnService : VpnService() {
             } else {
                 forward(packet, output) // fail open on resolve failure
             }
-            return
-        }
-
-        if (schedule.isSocialBlockedNow() && socialTrie.isBlocked(domain)) {
-            stats.recordBlockedSocial()
-            writeResponse(packet, DnsMessage.nxdomainResponse(query), output)
             return
         }
 
@@ -189,11 +196,40 @@ class BlockerVpnService : VpnService() {
         try {
             val cm = getSystemService(ConnectivityManager::class.java)
             val active = cm.activeNetwork
+            underlyingNetwork = active
             val servers = active?.let { cm.getLinkProperties(it)?.dnsServers } ?: emptyList()
             upstreamDnsServers = if (servers.isNotEmpty()) servers else listOf(InetAddress.getByName(FALLBACK_UPSTREAM_DNS))
-            Log.i("df-vpn", "upstream DNS servers: ${upstreamDnsServers.map { it.hostAddress }}")
+            Log.i("df-vpn", "upstream DNS servers: ${upstreamDnsServers.map { it.hostAddress }}, underlying network: $active")
         } catch (e: Exception) {
             upstreamDnsServers = listOf(InetAddress.getByName(FALLBACK_UPSTREAM_DNS))
+        }
+    }
+
+    /**
+     * protect() alone should be enough to keep a relay socket outside our
+     * own tunnel, but on-device testing (a ColorOS phone with WiFi and
+     * cellular both active) showed widespread, otherwise-inexplicable
+     * ECONNREFUSED on real, working destinations — consistent with the
+     * socket ending up on an ambiguous or wrong underlying network. Binding
+     * explicitly to the network captured at VPN start removes that
+     * ambiguity. Falls back to protect()-only if binding fails, rather than
+     * dropping the connection outright.
+     */
+    fun protectAndBind(socket: java.net.Socket) {
+        protect(socket)
+        underlyingNetwork?.let { net ->
+            try { net.bindSocket(socket) } catch (e: Exception) {
+                Log.e("df-vpn", "bindSocket (TCP) failed: $e")
+            }
+        }
+    }
+
+    fun protectAndBind(socket: DatagramSocket) {
+        protect(socket)
+        underlyingNetwork?.let { net ->
+            try { net.bindSocket(socket) } catch (e: Exception) {
+                Log.e("df-vpn", "bindSocket (UDP) failed: $e")
+            }
         }
     }
 
@@ -204,7 +240,7 @@ class BlockerVpnService : VpnService() {
             var socket: DatagramSocket? = null
             try {
                 socket = DatagramSocket()
-                protect(socket) // critical: keep this forwarding socket outside our own tunnel
+                protectAndBind(socket) // critical: keep this forwarding socket outside our own tunnel, on the right network
                 socket.soTimeout = 2000
 
                 socket.send(DatagramPacket(packet.payload, packet.payload.size, upstreamAddr, 53))

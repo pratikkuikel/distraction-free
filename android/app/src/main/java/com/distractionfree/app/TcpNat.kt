@@ -1,6 +1,5 @@
 package com.distractionfree.app
 
-import android.net.VpnService
 import android.util.Log
 import java.io.FileOutputStream
 import java.net.InetAddress
@@ -22,7 +21,7 @@ import kotlin.random.Random
  * general-purpose TCP stack would need. It is not a full RFC 793
  * implementation; it's sized for "don't break the internet" in this MVP.
  */
-class TcpNat(private val vpnService: VpnService, private val output: FileOutputStream) {
+class TcpNat(private val vpnService: BlockerVpnService, private val output: FileOutputStream) {
 
     companion object {
         // A phone under real load opens far more simultaneous TCP flows than
@@ -223,7 +222,7 @@ class TcpNat(private val vpnService: VpnService, private val output: FileOutputS
             try {
                 val dstIp = InetAddress.getByAddress(syn.dstAddr)
                 val socket = Socket()
-                vpnService.protect(socket)
+                vpnService.protectAndBind(socket)
                 socket.connect(java.net.InetSocketAddress(dstIp, syn.dstPort), 4000)
                 conn.socket = socket
                 conn.state = State.ESTABLISHED

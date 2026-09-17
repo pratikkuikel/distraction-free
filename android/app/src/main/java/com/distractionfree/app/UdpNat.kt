@@ -1,6 +1,5 @@
 package com.distractionfree.app
 
-import android.net.VpnService
 import android.util.Log
 import java.io.FileOutputStream
 import java.net.DatagramPacket
@@ -14,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
  * 0.0.0.0/0 into the tun, we have to actually forward what we're not
  * specifically filtering, or the device loses all connectivity.
  */
-class UdpNat(private val vpnService: VpnService, private val output: FileOutputStream) {
+class UdpNat(private val vpnService: BlockerVpnService, private val output: FileOutputStream) {
 
     companion object {
         // Shares RelayExecutor's pool with TcpNat — see TcpNat for why an
@@ -35,7 +34,7 @@ class UdpNat(private val vpnService: VpnService, private val output: FileOutputS
         val flow = flows[key] ?: run {
             if (flows.size >= MAX_CONCURRENT_FLOWS) return // at capacity: drop, client will retry or give up
             val socket = try {
-                DatagramSocket().also { vpnService.protect(it); it.soTimeout = idleTimeoutMs.toInt() }
+                DatagramSocket().also { vpnService.protectAndBind(it); it.soTimeout = idleTimeoutMs.toInt() }
             } catch (e: Exception) { return }
             val f = Flow(socket)
             val prior = flows.putIfAbsent(key, f)
