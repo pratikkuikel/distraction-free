@@ -85,3 +85,26 @@ MVP built and smoke-tested: DNS blocking, subdomain matching, forwarding, and Sa
 are verified working on both platforms. Full page-load testing on Android was constrained by the
 dev sandbox's emulator networking (see commit history / session notes) rather than the app itself —
 worth a real-device pass before relying on it daily.
+
+## Uninstall
+
+The in-app "Disable protection" button is deliberately a fake 24h countdown that never completes —
+that's the whole point. There's no in-app uninstall. To actually remove it:
+
+**macOS** (run each line in Terminal; the `sudo` ones will prompt for your password):
+
+```bash
+sudo launchctl bootout system/com.distractionfree.daemon 2>/dev/null
+sudo launchctl bootout system/com.distractionfree.blocklist-update 2>/dev/null
+launchctl bootout gui/$(id -u)/com.distractionfree.menubar 2>/dev/null
+sudo networksetup -setdnsservers Wi-Fi empty   # replace Wi-Fi with your active network service
+sudo rm -f /Library/LaunchDaemons/com.distractionfree.daemon.plist
+sudo rm -f /Library/LaunchDaemons/com.distractionfree.blocklist-update.plist
+rm -f ~/Library/LaunchAgents/com.distractionfree.menubar.plist
+sudo rm -rf /usr/local/opt/distraction-free /usr/local/etc/distraction-free /usr/local/var/distraction-free
+sudo rm -f /usr/local/bin/dfmenubar
+```
+
+**Android:** Settings → Apps → Distraction Free → Uninstall. (Or, to keep the app but stop the VPN
+immediately instead of waiting on the fake countdown, force-stop it from the same screen — a genuine
+OS-level override, same as macOS root access, that this app can't and shouldn't try to prevent.)
