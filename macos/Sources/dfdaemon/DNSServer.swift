@@ -59,6 +59,17 @@ final class DNSServer {
             return
         }
 
+        // Social-block check runs before SafeSearch: youtube.com is in both
+        // lists (it needs SafeSearch when open, hard-blocking when not), and
+        // checking SafeSearch first meant the bare domain could never
+        // actually be blocked during the nightly window — only its
+        // subdomains (ytimg.com etc.) were. Blocked wins.
+        if schedule.isSocialBlockedNow(), socialTrie.isBlocked(domain) {
+            stats.recordBlockedSocial()
+            respond(DNSMessage.nxdomainResponse(for: query), to: clientAddr, addrLen: addrLen)
+            return
+        }
+
         if let target = Config.safeSearchTargets[domain] {
             stats.recordSafeSearchRewrite()
             if let addr = resolveCached(target) {
@@ -66,12 +77,6 @@ final class DNSServer {
             } else {
                 forward(query: query, to: clientAddr, addrLen: addrLen) // fail open on resolve failure
             }
-            return
-        }
-
-        if schedule.isSocialBlockedNow(), socialTrie.isBlocked(domain) {
-            stats.recordBlockedSocial()
-            respond(DNSMessage.nxdomainResponse(for: query), to: clientAddr, addrLen: addrLen)
             return
         }
 

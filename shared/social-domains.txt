@@ -5,6 +5,13 @@
 #
 # Format: same as the always-on lists — one domain per line, blocking it
 # and all its subdomains. "*." prefix optional, stripped either way.
+#
+# fbcdn.net deliberately excluded despite being Instagram/Facebook
+# infrastructure: it's Meta's *shared* CDN, also used by WhatsApp for
+# media/link previews. On macOS (domain-only blocking, no per-app
+# exemption) this collaterally delayed/broke WhatsApp Desktop. Blocking
+# instagram.com/facebook.com's own domains already covers the intended
+# target without this collateral cost.
 
 instagram.com
 cdninstagram.com
@@ -15,7 +22,6 @@ x.com
 twitter.com
 twimg.com
 facebook.com
-fbcdn.net
 snapchat.com
 sc-cdn.net
 reddit.com

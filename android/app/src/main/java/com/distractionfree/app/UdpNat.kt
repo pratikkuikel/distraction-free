@@ -7,7 +7,6 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.concurrent.thread
 
 /**
  * Generic UDP relay for everything that isn't a DNS query (QUIC/HTTP3 and
@@ -17,22 +16,30 @@ import kotlin.concurrent.thread
  */
 class UdpNat(private val vpnService: VpnService, private val output: FileOutputStream) {
 
+    companion object {
+        // Shares RelayExecutor's pool with TcpNat — see TcpNat for why an
+        // unbounded thread-per-flow design isn't safe on a real device.
+        private const val MAX_CONCURRENT_FLOWS = 8
+    }
+
     private class Flow(val socket: DatagramSocket)
 
     private val flows = ConcurrentHashMap<String, Flow>()
     private val idleTimeoutMs = 60_000L
+    private val executor = RelayExecutor.shared
 
     fun handle(packet: Ipv4UdpPacket) {
         val key = "${packet.srcAddr.joinToString(".") { (it.toInt() and 0xFF).toString() }}:${packet.srcPort}-" +
                    "${packet.dstAddr.joinToString(".") { (it.toInt() and 0xFF).toString() }}:${packet.dstPort}"
 
-        val flow = flows.getOrPut(key) {
-            val socket = DatagramSocket()
-            vpnService.protect(socket)
-            socket.soTimeout = idleTimeoutMs.toInt()
+        val flow = flows[key] ?: run {
+            if (flows.size >= MAX_CONCURRENT_FLOWS) return // at capacity: drop, client will retry or give up
+            val socket = try {
+                DatagramSocket().also { vpnService.protect(it); it.soTimeout = idleTimeoutMs.toInt() }
+            } catch (e: Exception) { return }
             val f = Flow(socket)
-            startReader(key, f, packet)
-            f
+            val prior = flows.putIfAbsent(key, f)
+            if (prior != null) { socket.close(); prior } else { startReader(key, f, packet); f }
         }
 
         try {
@@ -45,7 +52,7 @@ class UdpNat(private val vpnService: VpnService, private val output: FileOutputS
     }
 
     private fun startReader(key: String, flow: Flow, originalPacket: Ipv4UdpPacket) {
-        thread(name = "df-udp-$key") {
+        executor.execute {
             val buf = ByteArray(65507)
             try {
                 while (true) {

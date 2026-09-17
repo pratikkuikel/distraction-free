@@ -10,6 +10,19 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
+    <!-- Without this, getPackageInfo() on these apps throws
+         NameNotFoundException even when they're installed (Android 11+
+         package-visibility filtering), which silently broke the
+         addDisallowedApplication exemption below for all of them. -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <package android:name="com.facebook.orca" />
+        <package android:name="org.telegram.messenger" />
+        <package android:name="im.botim.app" />
+        <package android:name="com.google.android.gms" />
+    </queries>
+
     <application
         android:label="Distraction Free"
         android:icon="@mipmap/ic_launcher"
