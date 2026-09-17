@@ -9,6 +9,11 @@ final class DNSServer {
     private let stats = Stats()
 
     private var listenSocket: Int32 = -1
+    // Concurrent so one slow query (a cold SafeSearch lookup, a sluggish
+    // upstream) can never head-of-line-block every other DNS query on the
+    // machine — the recvfrom loop just keeps receiving and hands each query
+    // off immediately.
+    private let workQueue = DispatchQueue(label: "dfdaemon.work", attributes: .concurrent)
     private let pathMonitor = NWPathMonitor()
     private var isOnline = true
     private var safeSearchCache: [String: (address: (UInt8, UInt8, UInt8, UInt8), expires: Date)] = [:]
@@ -22,7 +27,7 @@ final class DNSServer {
     func run() throws {
         startPathMonitor()
         try openSocket()
-        log("listening on 127.0.0.1:\(Config.listenPort), \(alwaysOnTrie.count) always-on + \(socialTrie.count) social domains loaded")
+        log("listening on \(Config.listenAddress):\(Config.listenPort), \(alwaysOnTrie.count) always-on + \(socialTrie.count) social domains loaded")
 
         var buffer = [UInt8](repeating: 0, count: 512)
         while true {
@@ -38,7 +43,9 @@ final class DNSServer {
             guard n > 0 else { continue }
             let query = Array(buffer[0..<n])
             stats.recordTotal()
-            handle(query: query, from: clientAddr, addrLen: clientAddrLen)
+            workQueue.async { [weak self] in
+                self?.handle(query: query, from: clientAddr, addrLen: clientAddrLen)
+            }
         }
     }
 
@@ -137,7 +144,7 @@ final class DNSServer {
         var addr = sockaddr_in()
         addr.sin_family = sa_family_t(AF_INET)
         addr.sin_port = Config.listenPort.bigEndian
-        inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr)
+        inet_pton(AF_INET, Config.listenAddress, &addr.sin_addr)
 
         let bindResult = withUnsafePointer(to: &addr) { ptr -> Int32 in
             ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { sockPtr in

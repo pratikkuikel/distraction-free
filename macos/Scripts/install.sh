@@ -16,9 +16,10 @@ swift build -c release --package-path "$REPO_ROOT"
 echo "Installing to $INSTALL_DIR (requires sudo)..."
 sudo mkdir -p "$INSTALL_DIR" "$CONFIG_DIR" "$STATE_DIR"
 sudo cp "$REPO_ROOT/.build/release/dfdaemon" "$INSTALL_DIR/dfdaemon"
+sudo cp "$REPO_ROOT/Scripts/run-daemon.sh" "$INSTALL_DIR/run-daemon.sh"
 sudo cp "$REPO_ROOT/Scripts/update-blocklist.sh" "$INSTALL_DIR/update-blocklist.sh"
 sudo cp "$REPO_ROOT/../shared/social-domains.txt" "$INSTALL_DIR/social-domains.txt"
-sudo chmod 755 "$INSTALL_DIR/dfdaemon" "$INSTALL_DIR/update-blocklist.sh"
+sudo chmod 755 "$INSTALL_DIR/dfdaemon" "$INSTALL_DIR/update-blocklist.sh" "$INSTALL_DIR/run-daemon.sh"
 sudo chmod 755 "$STATE_DIR" "$CONFIG_DIR" # menubar app (unprivileged) needs to write the social toggle + read stats
 
 echo "Fetching initial blocklists..."
@@ -32,7 +33,7 @@ sudo launchctl enable system/com.distractionfree.daemon
 
 echo "Pointing this Mac's DNS at the daemon..."
 NETWORK_SERVICE=$(networksetup -listallnetworkservices | grep -v '^\*' | grep -v "^An asterisk" | head -1)
-sudo networksetup -setdnsservers "$NETWORK_SERVICE" 127.0.0.1
+sudo networksetup -setdnsservers "$NETWORK_SERVICE" 127.0.0.2
 
 echo "Installing menubar app as a login item..."
 cp "$REPO_ROOT/.build/release/dfmenubar" /usr/local/bin/dfmenubar 2>/dev/null || sudo cp "$REPO_ROOT/.build/release/dfmenubar" /usr/local/bin/dfmenubar

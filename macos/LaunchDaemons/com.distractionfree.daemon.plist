@@ -6,7 +6,7 @@
     <string>com.distractionfree.daemon</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/local/opt/distraction-free/dfdaemon</string>
+        <string>/usr/local/opt/distraction-free/run-daemon.sh</string>
     </array>
     <key>RunAtLoad</key>
     <true/>

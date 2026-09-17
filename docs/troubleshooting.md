@@ -6,9 +6,9 @@
 1. Check the daemon is running: `sudo launchctl print system/com.distractionfree.daemon` — look for
    `state = running`.
 2. Check your Mac's DNS is actually pointed at the daemon: `networksetup -getdnsservers Wi-Fi`
-   should show `127.0.0.1`. If it shows something else (a network change, a VPN app, or manually
+   should show `127.0.0.2`. If it shows something else (a network change, a VPN app, or manually
    editing Network settings can reset this), re-run `Scripts/install.sh` or manually:
-   `sudo networksetup -setdnsservers Wi-Fi 127.0.0.1`.
+   `sudo networksetup -setdnsservers Wi-Fi 127.0.0.2`.
 3. Check the daemon's log: `cat /usr/local/var/distraction-free/daemon.log` — a `bind() failed`
    line means something else is already using port 53, or it's not running as root.
 
@@ -29,7 +29,7 @@ DoH/VPN/proxy providers for this reason — if you find a gap, it belongs in tha
 **Recovery from a corrupted/broken daemon**
 The daemon fails open by design at the OS level: if it crashes and isn't restarted (shouldn't
 happen — `KeepAlive` in the LaunchDaemon plist restarts it automatically), your Mac's DNS is
-pointed at `127.0.0.1` with nothing listening there, so **all** DNS resolution stops, not just the
+pointed at `127.0.0.2` with nothing listening there, so **all** DNS resolution stops, not just the
 blocked categories — you'd notice immediately (nothing loads) rather than silently losing
 protection. To recover: `sudo networksetup -setdnsservers Wi-Fi Empty` (falls back to DHCP-provided
 DNS) restores normal browsing while you debug the daemon.

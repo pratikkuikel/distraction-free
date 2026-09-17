@@ -19,6 +19,11 @@ enum Config {
     static let upstreamDNS = "1.1.1.1"
     static let upstreamPort: UInt16 = 53
     static let listenPort: UInt16 = ProcessInfo.processInfo.environment["DF_LISTEN_PORT"].flatMap { UInt16($0) } ?? 53
+    /// 127.0.0.2, not 127.0.0.1 — avoids fighting any other local resolver
+    /// already bound to the "default" loopback address (e.g. dnsmasq from
+    /// Herd/Valet-style local dev setups using 127.0.0.1:53 for *.test).
+    /// Any 127.0.0.0/8 address is loopback, so this needs no extra setup.
+    static let listenAddress: String = ProcessInfo.processInfo.environment["DF_LISTEN_ADDRESS"] ?? "127.0.0.2"
 
     // Social media schedule: hard-blocked 20:00-09:00 daily, open the rest
     // with an optional manual "block now" toggle 09:00-20:00.
