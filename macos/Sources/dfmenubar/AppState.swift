@@ -17,6 +17,7 @@ final class AppState: ObservableObject {
     @Published var bestStreak = 0
 
     @Published var timeBackMinutes = 0
+    @Published var dataBackMB: Double = 0
     @Published var todayQuote = ""
 
     private var timer: Timer?
@@ -26,7 +27,6 @@ final class AppState: ObservableObject {
     }()
 
     var totalBlocked: Int { blockedAlwaysOn + blockedSocial }
-    var estimatedMBSaved: Double { Double(totalBlocked) * Config.estimatedKBPerBlock / 1024 }
 
     init() {
         pickTodayQuote()
@@ -62,11 +62,17 @@ final class AppState: ObservableObject {
     private func loadTimeBack() {
         guard let data = FileManager.default.contents(atPath: Config.timeBackFile),
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
-        let adult = obj["adultMinutes"] as? Double ?? 0
-        let social = obj["socialMinutes"] as? Double ?? 0
-        let youtube = obj["youtubeMinutes"] as? Double ?? 0
-        let other = obj["otherMinutes"] as? Double ?? 0
-        timeBackMinutes = Int(adult + social + youtube + other)
+        let adultMin = obj["adultMinutes"] as? Double ?? 0
+        let socialMin = obj["socialMinutes"] as? Double ?? 0
+        let youtubeMin = obj["youtubeMinutes"] as? Double ?? 0
+        let otherMin = obj["otherMinutes"] as? Double ?? 0
+        timeBackMinutes = Int(adultMin + socialMin + youtubeMin + otherMin)
+
+        let adultMB = obj["adultMB"] as? Double ?? 0
+        let socialMB = obj["socialMB"] as? Double ?? 0
+        let youtubeMB = obj["youtubeMB"] as? Double ?? 0
+        let otherMB = obj["otherMB"] as? Double ?? 0
+        dataBackMB = adultMB + socialMB + youtubeMB + otherMB
     }
 
     private func loadStreak() {

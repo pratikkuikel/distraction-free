@@ -10,12 +10,6 @@ enum Config {
     static let installDir = ProcessInfo.processInfo.environment["DF_INSTALL_DIR"] ?? "/usr/local/opt/distraction-free"
     static let quotesPath = "\(installDir)/quotes.txt"
 
-    // Rough, clearly-labeled bandwidth estimate for the stats card — same
-    // spirit as Brave/uBlock's own numbers: illustrative, not measured.
-    // Time back uses real per-category incrementing counters instead (see
-    // TimeBack.swift in the daemon) since "adult" and "one ad request"
-    // clearly aren't worth the same number of minutes.
-    static let estimatedKBPerBlock: Double = 45
     static let disableLogFile: String = {
         let base = NSHomeDirectory() + "/Library/Application Support/distraction-free"
         try? FileManager.default.createDirectory(atPath: base, withIntermediateDirectories: true)

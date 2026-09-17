@@ -38,6 +38,13 @@ enum Config {
     static let youtubeMinutesPerBlock: Double = 30
     static let otherMinutesPerBlock: Double = 15 // gambling/piracy/bypass
 
+    // Same per-category logic for data: video-heavy categories cost far
+    // more bandwidth per visit than a blocked gambling/piracy attempt.
+    static let adultMBPerBlock: Double = 150
+    static let socialMBPerBlock: Double = 80
+    static let youtubeMBPerBlock: Double = 200
+    static let otherMBPerBlock: Double = 20
+
     static let upstreamDNS = "1.1.1.1"
     static let upstreamPort: UInt16 = 53
     static let listenPort: UInt16 = ProcessInfo.processInfo.environment["DF_LISTEN_PORT"].flatMap { UInt16($0) } ?? 53

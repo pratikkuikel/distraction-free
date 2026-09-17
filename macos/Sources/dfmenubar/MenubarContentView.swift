@@ -101,19 +101,13 @@ struct MenubarContentView: View {
                 .foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 18) {
                 statBlock(value: "\(state.totalBlocked)", label: "Blocked", color: .orange)
-                statBlock(value: String(format: "%.1f MB", state.estimatedMBSaved), label: "Est. saved", color: .purple)
-                statBlock(value: formattedTimeBack, label: "Est. time back", color: .green)
+                statBlock(value: Formatting.dataSize(mb: state.dataBackMB), label: "Est. data saved", color: .purple)
+                statBlock(value: Formatting.duration(minutes: state.timeBackMinutes), label: "Est. time back", color: .green)
             }
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.05)))
-    }
-
-    private var formattedTimeBack: String {
-        let hours = state.timeBackMinutes / 60
-        let minutes = state.timeBackMinutes % 60
-        return hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m"
     }
 
     private func statBlock(value: String, label: String, color: Color) -> some View {
