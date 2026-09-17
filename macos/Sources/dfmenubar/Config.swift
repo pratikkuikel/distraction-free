@@ -5,6 +5,13 @@ enum Config {
     static let stateDir = ProcessInfo.processInfo.environment["DF_STATE_DIR"] ?? "/usr/local/var/distraction-free"
     static let statsFile = "\(stateDir)/stats.json"
     static let socialToggleFile = "\(stateDir)/social-toggle.json"
+    static let streakFile = "\(stateDir)/streak.json"
+
+    // Rough, clearly-labeled estimates for the stats card — same spirit as
+    // Brave/uBlock's own bandwidth/time-saved numbers: illustrative, not
+    // measured.
+    static let estimatedKBPerBlock: Double = 45
+    static let estimatedSecondsPerBlock: Double = 6
     static let disableLogFile: String = {
         let base = NSHomeDirectory() + "/Library/Application Support/distraction-free"
         try? FileManager.default.createDirectory(atPath: base, withIntermediateDirectories: true)

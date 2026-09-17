@@ -7,6 +7,7 @@ final class DNSServer {
     private let socialTrie: DomainTrie
     private let schedule = ScheduleManager()
     private let stats = Stats()
+    private let streak = Streak()
 
     private var listenSocket: Int32 = -1
     // Concurrent so one slow query (a cold SafeSearch lookup, a sluggish
@@ -52,6 +53,7 @@ final class DNSServer {
     private func handle(query: [UInt8], from clientAddr: sockaddr_in, addrLen: socklen_t) {
         guard let name = DNSMessage.questionName(from: query) else { return }
         let domain = name.lowercased()
+        streak.touch() // cheap: no-op unless the calendar day has changed
 
         if alwaysOnTrie.isBlocked(domain) {
             stats.recordBlockedAlwaysOn()

@@ -6,8 +6,22 @@ struct MenubarContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Distraction Free")
-                .font(.headline)
+            HStack {
+                Text("Distraction Free")
+                    .font(.headline)
+                Spacer()
+                if state.currentStreak > 0 {
+                    Text("🔥 \(state.currentStreak)")
+                        .font(.system(size: 14, weight: .bold))
+                }
+            }
+            if state.bestStreak > 0 {
+                Text("Best streak: \(state.bestStreak) day\(state.bestStreak == 1 ? "" : "s")")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+
+            statsCard
 
             VStack(alignment: .leading, spacing: 4) {
                 statusRow("Adult / gambling / piracy", "Always blocked")
@@ -21,27 +35,18 @@ struct MenubarContentView: View {
             }
             .font(.system(size: 12))
 
-            Divider()
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Queries: \(state.totalQueries)  ·  Blocked: \(state.blockedAlwaysOn + state.blockedSocial)  ·  SafeSearch: \(state.safeSearchRewrites)")
-                if let updated = state.statsUpdatedAt {
-                    Text("Updated \(updated.formatted(date: .omitted, time: .shortened))")
+            // Only shown when it can actually do something — during the
+            // forced nightly window social is already blocked regardless,
+            // so a toggle that visibly does nothing is just confusing.
+            if !state.isInForcedSocialWindow {
+                Toggle(isOn: Binding(
+                    get: { state.socialManualBlock },
+                    set: { state.setSocialManualBlock($0) }
+                )) {
+                    Text("Block social media now")
                 }
+                .toggleStyle(.switch)
             }
-            .font(.system(size: 11))
-            .foregroundStyle(.secondary)
-
-            Divider()
-
-            Toggle(isOn: Binding(
-                get: { state.socialManualBlock },
-                set: { state.setSocialManualBlock($0) }
-            )) {
-                Text("Block social media now")
-            }
-            .disabled(state.isInForcedSocialWindow)
-            .toggleStyle(.switch)
 
             Button("Update blocklist…") {
                 state.runUpdateScript()
@@ -61,7 +66,7 @@ struct MenubarContentView: View {
                 Text("Disable protection")
             }
             .confirmationDialog(
-                "Disabling takes effect 24 hours after your request, and the timer restarts on every new request.",
+                "Disabling takes effect 24 hours after your request, and the timer restarts on every new request. Your \(state.currentStreak)-day streak resets immediately, though.",
                 isPresented: $showDisableConfirm,
                 titleVisibility: .visible
             ) {
@@ -79,6 +84,33 @@ struct MenubarContentView: View {
         }
         .padding(14)
         .frame(width: 300)
+    }
+
+    private var statsCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("STATS")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 18) {
+                statBlock(value: "\(state.totalBlocked)", label: "Blocked", color: .orange)
+                statBlock(value: String(format: "%.1f MB", state.estimatedMBSaved), label: "Est. saved", color: .purple)
+                statBlock(value: "\(state.estimatedMinutesSaved)m", label: "Est. time back", color: .primary)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.05)))
+    }
+
+    private func statBlock(value: String, label: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(color)
+            Text(label)
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func statusRow(_ label: String, _ value: String) -> some View {

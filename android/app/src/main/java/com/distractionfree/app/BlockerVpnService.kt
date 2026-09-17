@@ -56,6 +56,7 @@ class BlockerVpnService : VpnService() {
     private lateinit var socialTrie: DomainTrie
     private lateinit var schedule: ScheduleManager
     private lateinit var stats: Stats
+    private lateinit var streak: StreakManager
     private var isOnline = true
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var tcpNat: TcpNat? = null
@@ -67,6 +68,7 @@ class BlockerVpnService : VpnService() {
         super.onCreate()
         schedule = ScheduleManager(this)
         stats = Stats(this)
+        streak = StreakManager(this)
         alwaysOnTrie = BlocklistRepository.buildAlwaysOnTrie(this)
         socialTrie = BlocklistRepository.buildSocialTrie(this)
         registerNetworkCallback()
@@ -112,6 +114,7 @@ class BlockerVpnService : VpnService() {
         running.set(true)
         isRunning = true
         AlarmScheduler.scheduleNextTransitions(this)
+        BlocklistUpdateScheduler.scheduleNext(this)
 
         thread(name = "df-vpn-loop") { runPacketLoop() }
     }
@@ -156,6 +159,7 @@ class BlockerVpnService : VpnService() {
         val query = packet.payload
         val name = DnsMessage.questionName(query) ?: return
         val domain = name.lowercase()
+        streak.touch() // cheap: no-op unless the calendar day has changed
 
         if (alwaysOnTrie.isBlocked(domain)) {
             stats.recordBlockedAlwaysOn()

@@ -6,7 +6,6 @@ import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.util.TypedValue
-import android.view.Gravity
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -14,15 +13,23 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
-import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var streakText: TextView
     private lateinit var statusText: TextView
-    private lateinit var statsText: TextView
+    private lateinit var statsCard: LinearLayout
+    private lateinit var statBlocked: TextView
+    private lateinit var statSaved: TextView
+    private lateinit var statTime: TextView
     private lateinit var socialToggleButton: Button
     private lateinit var disableButton: Button
     private lateinit var schedule: ScheduleManager
+
+    // Same illustrative-estimate spirit as Brave/uBlock's own bandwidth/time
+    // saved numbers — not measured, clearly a "roughly this much" figure.
+    private val estimatedKBPerBlock = 45.0
+    private val estimatedSecondsPerBlock = 6.0
 
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -41,6 +48,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(buildUi())
         maybeRequestNotificationPermission()
         AlarmScheduler.scheduleNextTransitions(this)
+        BlocklistUpdateScheduler.scheduleNext(this)
 
         if (BlocklistUpdater.needsInitialPopulate(this)) {
             statusText.text = "Downloading blocklist..."
@@ -76,11 +84,37 @@ class MainActivity : AppCompatActivity() {
             setPadding(0, dp(8), 0, dp(8))
         }
 
-        root.addView(title("Distraction Free", 26f))
+        val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        header.addView(title("Distraction Free", 26f), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        streakText = TextView(this).apply {
+            setTextColor(Color.parseColor("#FF9500"))
+            textSize = 20f
+            setPadding(0, dp(8), 0, dp(8))
+        }
+        header.addView(streakText)
+        root.addView(header)
+
         statusText = title("Starting...", 16f)
         root.addView(statusText)
-        statsText = title("", 13f).apply { setTextColor(Color.parseColor("#AAAAAA")) }
-        root.addView(statsText)
+
+        statsCard = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setBackgroundColor(Color.parseColor("#2A2F52"))
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+        }
+        fun statColumn(): TextView = TextView(this).apply {
+            setTextColor(Color.WHITE)
+            textSize = 15f
+        }
+        statBlocked = statColumn()
+        statSaved = statColumn()
+        statTime = statColumn()
+        for (v in listOf(statBlocked, statSaved, statTime)) {
+            statsCard.addView(v, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        root.addView(statsCard, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(16) })
 
         socialToggleButton = Button(this).apply {
             text = "Block social media now"
@@ -107,7 +141,7 @@ class MainActivity : AppCompatActivity() {
         ).apply { topMargin = dp(12) })
 
         val note = TextView(this).apply {
-            text = "WhatsApp, Messenger, Telegram, and Botim always work — this only filters adult, gambling, piracy, VPN/proxy-bypass, and (on schedule) social feed content."
+            text = "WhatsApp, Messenger, Telegram, and Botim always work — this only filters adult, gambling, piracy, VPN/proxy-bypass, and (on schedule) social feed content. Blocklist auto-updates daily at 4am."
             setTextColor(Color.parseColor("#888888"))
             textSize = 12f
             setPadding(0, dp(24), 0, 0)
@@ -154,7 +188,8 @@ class MainActivity : AppCompatActivity() {
             action = BlockerVpnService.ACTION_STOP
         }
         startService(intent)
-        Toast.makeText(this, "Disable requested — takes effect in 24h.", Toast.LENGTH_LONG).show()
+        StreakManager.resetCurrentStreak(this) // trying to disable resets your streak
+        Toast.makeText(this, "Disable requested — takes effect in 24h. Streak reset.", Toast.LENGTH_LONG).show()
         refresh()
     }
 
@@ -191,14 +226,38 @@ class MainActivity : AppCompatActivity() {
         }
 
         socialToggleButton.text = if (schedule.readManualToggle()) "Unblock social media" else "Block social media now"
-        socialToggleButton.isEnabled = !inForcedWindow
+        // Only shown/usable when it can actually do something — during the
+        // forced window social is already blocked regardless, so a control
+        // that visibly does nothing is just confusing.
+        socialToggleButton.visibility = if (inForcedWindow) android.view.View.GONE else android.view.View.VISIBLE
+
+        val streakFile = AppPaths.streakFile(this)
+        var currentStreak = 0
+        var bestStreak = 0
+        if (streakFile.exists()) {
+            try {
+                val obj = JSONObject(streakFile.readText())
+                currentStreak = obj.optInt("currentStreak", 0)
+                bestStreak = obj.optInt("bestStreak", 0)
+            } catch (e: Exception) { /* ignore */ }
+        }
+        streakText.text = if (currentStreak > 0) "🔥 $currentStreak" else ""
 
         val statsFile = AppPaths.statsFile(this)
+        var blocked = 0
         if (statsFile.exists()) {
             try {
                 val obj = JSONObject(statsFile.readText())
-                statsText.text = "Queries: ${obj.optInt("totalQueries")} · Blocked: ${obj.optInt("blockedAlwaysOn") + obj.optInt("blockedSocial")} · SafeSearch: ${obj.optInt("safeSearchRewrites")}"
+                blocked = obj.optInt("blockedAlwaysOn") + obj.optInt("blockedSocial")
             } catch (e: Exception) { /* ignore */ }
         }
+        val mbSaved = blocked * estimatedKBPerBlock / 1024
+        val minutesSaved = (blocked * estimatedSecondsPerBlock / 60).toInt()
+        statBlocked.text = "$blocked\nBlocked"
+        statSaved.text = String.format("%.1f MB\nEst. saved", mbSaved)
+        statTime.text = "${minutesSaved}m\nEst. time back"
+
+        val bestLine = if (bestStreak > 0) " · Best: $bestStreak" else ""
+        statusText.append("$bestLine")
     }
 }

@@ -15,6 +15,15 @@ enum Config {
     static let stateDir = ProcessInfo.processInfo.environment["DF_STATE_DIR"] ?? "/usr/local/var/distraction-free"
     static let statsFile = "\(stateDir)/stats.json"
     static let socialToggleFile = "\(stateDir)/social-toggle.json"
+    static let streakFile = "\(stateDir)/streak.json"
+
+    // Rough, clearly-labeled estimates for the "stats card" — same spirit as
+    // Brave/uBlock's own bandwidth/time-saved numbers: illustrative, not
+    // measured. We don't actually track bytes or dwell time; a blocked
+    // request would have cost roughly a mid-size ad/tracker payload and a
+    // few seconds of a visit that never happened.
+    static let estimatedKBPerBlock: Double = 45
+    static let estimatedSecondsPerBlock: Double = 6
 
     static let upstreamDNS = "1.1.1.1"
     static let upstreamPort: UInt16 = 53

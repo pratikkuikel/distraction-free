@@ -13,7 +13,14 @@ final class AppState: ObservableObject {
 
     @Published var socialManualBlock = false
 
+    @Published var currentStreak = 0
+    @Published var bestStreak = 0
+
     private var timer: Timer?
+
+    var totalBlocked: Int { blockedAlwaysOn + blockedSocial }
+    var estimatedMBSaved: Double { Double(totalBlocked) * Config.estimatedKBPerBlock / 1024 }
+    var estimatedMinutesSaved: Int { Int(Double(totalBlocked) * Config.estimatedSecondsPerBlock / 60) }
 
     init() {
         refresh()
@@ -35,6 +42,14 @@ final class AppState: ObservableObject {
         loadStats()
         loadDisableLog()
         loadSocialToggle()
+        loadStreak()
+    }
+
+    private func loadStreak() {
+        guard let data = FileManager.default.contents(atPath: Config.streakFile),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        currentStreak = obj["currentStreak"] as? Int ?? 0
+        bestStreak = obj["bestStreak"] as? Int ?? 0
     }
 
     private func loadStats() {
@@ -83,6 +98,20 @@ final class AppState: ObservableObject {
             try? data.write(to: URL(fileURLWithPath: Config.disableLogFile))
         }
         loadDisableLog()
+        resetStreak() // trying to disable resets your streak — the daemon never actually stops
+    }
+
+    private func resetStreak() {
+        var obj: [String: Any] = [:]
+        if let data = FileManager.default.contents(atPath: Config.streakFile),
+           let existing = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            obj = existing
+        }
+        obj["currentStreak"] = 0
+        guard let data = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted]) else { return }
+        try? FileManager.default.createDirectory(atPath: Config.stateDir, withIntermediateDirectories: true)
+        try? data.write(to: URL(fileURLWithPath: Config.streakFile), options: .atomic)
+        currentStreak = 0
     }
 
     func setSocialManualBlock(_ blocked: Bool) {

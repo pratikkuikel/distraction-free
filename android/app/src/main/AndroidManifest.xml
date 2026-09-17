@@ -65,5 +65,9 @@
             android:name=".ScheduleReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".BlocklistUpdateReceiver"
+            android:exported="false" />
+
     </application>
 </manifest>

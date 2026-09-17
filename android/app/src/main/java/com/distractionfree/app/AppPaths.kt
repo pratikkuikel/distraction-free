@@ -11,4 +11,5 @@ object AppPaths {
     fun socialToggleFile(context: Context) = File(stateDir(context), "social-toggle.json")
     fun disableLogFile(context: Context) = File(stateDir(context), "disable-log.json")
     fun statsFile(context: Context) = File(stateDir(context), "stats.json")
+    fun streakFile(context: Context) = File(stateDir(context), "streak.json")
 }

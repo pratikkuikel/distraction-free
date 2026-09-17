@@ -31,6 +31,12 @@ sudo launchctl bootout system/com.distractionfree.daemon >/dev/null 2>&1 || true
 sudo launchctl bootstrap system /Library/LaunchDaemons/com.distractionfree.daemon.plist
 sudo launchctl enable system/com.distractionfree.daemon
 
+echo "Installing daily blocklist auto-update (4am)..."
+sudo cp "$REPO_ROOT/LaunchDaemons/com.distractionfree.blocklist-update.plist" /Library/LaunchDaemons/
+sudo launchctl bootout system/com.distractionfree.blocklist-update >/dev/null 2>&1 || true
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.distractionfree.blocklist-update.plist
+sudo launchctl enable system/com.distractionfree.blocklist-update
+
 echo "Pointing this Mac's DNS at the daemon..."
 NETWORK_SERVICE=$(networksetup -listallnetworkservices | grep -v '^\*' | grep -v "^An asterisk" | head -1)
 sudo networksetup -setdnsservers "$NETWORK_SERVICE" 127.0.0.2
