@@ -4,10 +4,13 @@ import Network
 
 final class DNSServer {
     private let alwaysOnTrie: DomainTrie
+    private let adultTrie: DomainTrie
     private let socialTrie: DomainTrie
+    private let youtubeTrie: DomainTrie
     private let schedule = ScheduleManager()
     private let stats = Stats()
     private let streak = Streak()
+    private let timeBack = TimeBack()
 
     private var listenSocket: Int32 = -1
     // Concurrent so one slow query (a cold SafeSearch lookup, a sluggish
@@ -20,9 +23,11 @@ final class DNSServer {
     private var safeSearchCache: [String: (address: (UInt8, UInt8, UInt8, UInt8), expires: Date)] = [:]
     private let safeSearchLock = NSLock()
 
-    init(alwaysOnTrie: DomainTrie, socialTrie: DomainTrie) {
+    init(alwaysOnTrie: DomainTrie, adultTrie: DomainTrie, socialTrie: DomainTrie, youtubeTrie: DomainTrie) {
         self.alwaysOnTrie = alwaysOnTrie
+        self.adultTrie = adultTrie
         self.socialTrie = socialTrie
+        self.youtubeTrie = youtubeTrie
     }
 
     func run() throws {
@@ -57,6 +62,7 @@ final class DNSServer {
 
         if alwaysOnTrie.isBlocked(domain) {
             stats.recordBlockedAlwaysOn()
+            if adultTrie.isBlocked(domain) { timeBack.recordAdultBlock() } else { timeBack.recordOtherBlock() }
             respond(DNSMessage.nxdomainResponse(for: query), to: clientAddr, addrLen: addrLen)
             return
         }
@@ -68,6 +74,7 @@ final class DNSServer {
         // subdomains (ytimg.com etc.) were. Blocked wins.
         if schedule.isSocialBlockedNow(), socialTrie.isBlocked(domain) {
             stats.recordBlockedSocial()
+            if youtubeTrie.isBlocked(domain) { timeBack.recordYoutubeBlock() } else { timeBack.recordSocialBlock() }
             respond(DNSMessage.nxdomainResponse(for: query), to: clientAddr, addrLen: addrLen)
             return
         }

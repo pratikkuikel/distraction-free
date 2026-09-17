@@ -12,4 +12,9 @@ object AppPaths {
     fun disableLogFile(context: Context) = File(stateDir(context), "disable-log.json")
     fun statsFile(context: Context) = File(stateDir(context), "stats.json")
     fun streakFile(context: Context) = File(stateDir(context), "streak.json")
+    fun timeBackFile(context: Context) = File(stateDir(context), "timeback.json")
+    /// Adult-only subset — lets us tell "adult" blocks apart from
+    /// gambling/piracy/bypass for the time-back estimate. The actual block
+    /// decision still uses the single merged always-on.txt trie.
+    fun adultList(context: Context) = File(context.filesDir, "adult.txt")
 }

@@ -24,12 +24,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statTime: TextView
     private lateinit var socialToggleButton: Button
     private lateinit var disableButton: Button
+    private lateinit var quoteText: TextView
     private lateinit var schedule: ScheduleManager
 
-    // Same illustrative-estimate spirit as Brave/uBlock's own bandwidth/time
+    // Same illustrative-estimate spirit as Brave/uBlock's own bandwidth
     // saved numbers — not measured, clearly a "roughly this much" figure.
+    // Time back uses real per-category counters instead (TimeBack.kt) since
+    // "adult" and "one ad request" clearly aren't worth the same minutes.
     private val estimatedKBPerBlock = 45.0
-    private val estimatedSecondsPerBlock = 6.0
+
+    private val quotes: List<String> by lazy {
+        try {
+            assets.open("quotes.txt").bufferedReader().readLines().filter { it.isNotBlank() }
+        } catch (e: Exception) { emptyList() }
+    }
 
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -46,6 +54,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         schedule = ScheduleManager(this)
         setContentView(buildUi())
+        showTodayQuote()
         maybeRequestNotificationPermission()
         AlarmScheduler.scheduleNextTransitions(this)
         BlocklistUpdateScheduler.scheduleNext(this)
@@ -116,6 +125,14 @@ class MainActivity : AppCompatActivity() {
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dp(16) })
 
+        quoteText = TextView(this).apply {
+            setTextColor(Color.parseColor("#AAAAAA"))
+            textSize = 13f
+            setTypeface(typeface, android.graphics.Typeface.ITALIC)
+            setPadding(0, dp(12), 0, 0)
+        }
+        root.addView(quoteText)
+
         socialToggleButton = Button(this).apply {
             text = "Block social media now"
             setOnClickListener { toggleSocialBlock() }
@@ -149,6 +166,12 @@ class MainActivity : AppCompatActivity() {
         root.addView(note)
 
         return root
+    }
+
+    private fun showTodayQuote() {
+        if (quotes.isEmpty()) return
+        val dayOfYear = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR)
+        quoteText.text = "“${quotes[dayOfYear % quotes.size]}”"
     }
 
     private fun dp(value: Int): Int =
@@ -252,10 +275,21 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) { /* ignore */ }
         }
         val mbSaved = blocked * estimatedKBPerBlock / 1024
-        val minutesSaved = (blocked * estimatedSecondsPerBlock / 60).toInt()
+
+        val timeBackFile = AppPaths.timeBackFile(this)
+        var totalMinutes = 0
+        if (timeBackFile.exists()) {
+            try {
+                val obj = JSONObject(timeBackFile.readText())
+                totalMinutes = (obj.optDouble("adultMinutes", 0.0) + obj.optDouble("socialMinutes", 0.0) +
+                    obj.optDouble("youtubeMinutes", 0.0) + obj.optDouble("otherMinutes", 0.0)).toInt()
+            } catch (e: Exception) { /* ignore */ }
+        }
+        val timeBackLabel = if (totalMinutes >= 60) "${totalMinutes / 60}h ${totalMinutes % 60}m" else "${totalMinutes}m"
+
         statBlocked.text = "$blocked\nBlocked"
         statSaved.text = String.format("%.1f MB\nEst. saved", mbSaved)
-        statTime.text = "${minutesSaved}m\nEst. time back"
+        statTime.text = "$timeBackLabel\nEst. time back"
 
         val bestLine = if (bestStreak > 0) " · Best: $bestStreak" else ""
         statusText.append("$bestLine")

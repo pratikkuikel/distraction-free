@@ -7,10 +7,16 @@ try? FileManager.default.createDirectory(atPath: Config.stateDir, withIntermedia
 let alwaysOnTrie = DomainTrie()
 BlocklistLoader.load(path: Config.alwaysOnList, into: alwaysOnTrie)
 
+let adultTrie = DomainTrie()
+BlocklistLoader.load(path: Config.adultList, into: adultTrie)
+
 let socialTrie = DomainTrie()
 BlocklistLoader.load(path: Config.socialList, into: socialTrie)
 
-let server = DNSServer(alwaysOnTrie: alwaysOnTrie, socialTrie: socialTrie)
+let youtubeTrie = DomainTrie()
+for domain in Config.youtubeDomains { youtubeTrie.insert(domain) }
+
+let server = DNSServer(alwaysOnTrie: alwaysOnTrie, adultTrie: adultTrie, socialTrie: socialTrie, youtubeTrie: youtubeTrie)
 do {
     try server.run()
 } catch {

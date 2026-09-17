@@ -7,6 +7,13 @@ enum Config {
     static let configDir = ProcessInfo.processInfo.environment["DF_CONFIG_DIR"] ?? "/usr/local/etc/distraction-free"
     static let alwaysOnList = "\(configDir)/always-on.txt"
     static let socialList = "\(configDir)/social.txt"
+    /// Adult-only subset of always-on.txt — used only to tell "adult" blocks
+    /// apart from gambling/piracy/bypass for the time-back estimate; the
+    /// actual block decision still uses the single merged alwaysOnTrie.
+    static let adultList = "\(configDir)/adult.txt"
+    /// Not a file — small and stable enough to hardcode; used the same way
+    /// as adultList, to tell YouTube apart from other social blocks.
+    static let youtubeDomains = ["youtube.com", "youtube-nocookie.com", "ytimg.com", "youtu.be"]
 
     /// Runtime state the daemon writes (stats) and reads (manual toggle).
     /// Root-owned, world-readable/writable so the unprivileged menubar app
@@ -16,14 +23,20 @@ enum Config {
     static let statsFile = "\(stateDir)/stats.json"
     static let socialToggleFile = "\(stateDir)/social-toggle.json"
     static let streakFile = "\(stateDir)/streak.json"
+    static let timeBackFile = "\(stateDir)/timeback.json"
+    static let installDir = ProcessInfo.processInfo.environment["DF_INSTALL_DIR"] ?? "/usr/local/opt/distraction-free"
+    static let quotesPath = "\(installDir)/quotes.txt"
 
-    // Rough, clearly-labeled estimates for the "stats card" — same spirit as
-    // Brave/uBlock's own bandwidth/time-saved numbers: illustrative, not
-    // measured. We don't actually track bytes or dwell time; a blocked
-    // request would have cost roughly a mid-size ad/tracker payload and a
-    // few seconds of a visit that never happened.
-    static let estimatedKBPerBlock: Double = 45
-    static let estimatedSecondsPerBlock: Double = 6
+    // Rough, clearly-labeled per-category estimates for the "time back"
+    // stat — same spirit as Brave/uBlock's own bandwidth/time-saved
+    // numbers: illustrative, not measured. A blocked adult-site visit
+    // plausibly cost a lot more time than a single blocked ad request, so
+    // this is a flat estimate *per blocked attempt*, credited to a running
+    // counter the moment the block happens — not derived from raw counts.
+    static let adultMinutesPerBlock: Double = 60
+    static let socialMinutesPerBlock: Double = 60
+    static let youtubeMinutesPerBlock: Double = 30
+    static let otherMinutesPerBlock: Double = 15 // gambling/piracy/bypass
 
     static let upstreamDNS = "1.1.1.1"
     static let upstreamPort: UInt16 = 53

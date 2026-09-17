@@ -18,6 +18,22 @@ object BlocklistRepository {
         return trie
     }
 
+    fun buildAdultTrie(context: Context): DomainTrie {
+        val trie = DomainTrie()
+        load(AppPaths.adultList(context), trie)
+        return trie
+    }
+
+    /// Small and stable enough to hardcode — mirrors the macOS daemon's
+    /// Config.youtubeDomains.
+    val youtubeDomains = listOf("youtube.com", "youtube-nocookie.com", "ytimg.com", "youtu.be")
+
+    fun buildYoutubeTrie(): DomainTrie {
+        val trie = DomainTrie()
+        youtubeDomains.forEach { trie.insert(it) }
+        return trie
+    }
+
     private fun load(file: File, trie: DomainTrie) {
         if (!file.exists()) return
         file.forEachLine { rawLine ->

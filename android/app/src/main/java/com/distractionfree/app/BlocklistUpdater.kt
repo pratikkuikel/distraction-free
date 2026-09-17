@@ -38,6 +38,14 @@ object BlocklistUpdater {
             }
             AppPaths.alwaysOnList(context).writeText(merged.joinToString("\n"))
 
+            // Adult saved separately too — lets the time-back estimate tell
+            // "adult" blocks apart from gambling/piracy/bypass.
+            val adultOnly = fetchLines("$BASE_URL/nsfw.txt")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && !it.startsWith("#") }
+                .map { it.removePrefix("*.") }
+            AppPaths.adultList(context).writeText(adultOnly.joinToString("\n"))
+
             context.assets.open("social-domains.txt").use { input ->
                 AppPaths.socialList(context).outputStream().use { output -> input.copyTo(output) }
             }

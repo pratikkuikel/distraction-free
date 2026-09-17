@@ -53,10 +53,13 @@ class BlockerVpnService : VpnService() {
     private var vpnInterface: ParcelFileDescriptor? = null
     private val running = AtomicBoolean(false)
     private lateinit var alwaysOnTrie: DomainTrie
+    private lateinit var adultTrie: DomainTrie
     private lateinit var socialTrie: DomainTrie
+    private lateinit var youtubeTrie: DomainTrie
     private lateinit var schedule: ScheduleManager
     private lateinit var stats: Stats
     private lateinit var streak: StreakManager
+    private lateinit var timeBack: TimeBack
     private var isOnline = true
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var tcpNat: TcpNat? = null
@@ -69,8 +72,11 @@ class BlockerVpnService : VpnService() {
         schedule = ScheduleManager(this)
         stats = Stats(this)
         streak = StreakManager(this)
+        timeBack = TimeBack(this)
         alwaysOnTrie = BlocklistRepository.buildAlwaysOnTrie(this)
+        adultTrie = BlocklistRepository.buildAdultTrie(this)
         socialTrie = BlocklistRepository.buildSocialTrie(this)
+        youtubeTrie = BlocklistRepository.buildYoutubeTrie()
         registerNetworkCallback()
     }
 
@@ -163,6 +169,7 @@ class BlockerVpnService : VpnService() {
 
         if (alwaysOnTrie.isBlocked(domain)) {
             stats.recordBlockedAlwaysOn()
+            if (adultTrie.isBlocked(domain)) timeBack.recordAdultBlock() else timeBack.recordOtherBlock()
             writeResponse(packet, DnsMessage.nxdomainResponse(query), output)
             return
         }
@@ -174,6 +181,7 @@ class BlockerVpnService : VpnService() {
         // subdomains (ytimg.com etc.) were. Blocked wins.
         if (schedule.isSocialBlockedNow() && socialTrie.isBlocked(domain)) {
             stats.recordBlockedSocial()
+            if (youtubeTrie.isBlocked(domain)) timeBack.recordYoutubeBlock() else timeBack.recordSocialBlock()
             writeResponse(packet, DnsMessage.nxdomainResponse(query), output)
             return
         }

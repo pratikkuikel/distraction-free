@@ -16,17 +16,30 @@ final class AppState: ObservableObject {
     @Published var currentStreak = 0
     @Published var bestStreak = 0
 
+    @Published var timeBackMinutes = 0
+    @Published var todayQuote = ""
+
     private var timer: Timer?
+    private static let quotes: [String] = {
+        (try? String(contentsOfFile: Config.quotesPath, encoding: .utf8))?
+            .split(separator: "\n").map(String.init).filter { !$0.isEmpty } ?? []
+    }()
 
     var totalBlocked: Int { blockedAlwaysOn + blockedSocial }
     var estimatedMBSaved: Double { Double(totalBlocked) * Config.estimatedKBPerBlock / 1024 }
-    var estimatedMinutesSaved: Int { Int(Double(totalBlocked) * Config.estimatedSecondsPerBlock / 60) }
 
     init() {
+        pickTodayQuote()
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             self?.refresh()
         }
+    }
+
+    private func pickTodayQuote() {
+        guard !Self.quotes.isEmpty else { return }
+        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
+        todayQuote = Self.quotes[dayOfYear % Self.quotes.count]
     }
 
     var isInForcedSocialWindow: Bool {
@@ -43,6 +56,17 @@ final class AppState: ObservableObject {
         loadDisableLog()
         loadSocialToggle()
         loadStreak()
+        loadTimeBack()
+    }
+
+    private func loadTimeBack() {
+        guard let data = FileManager.default.contents(atPath: Config.timeBackFile),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        let adult = obj["adultMinutes"] as? Double ?? 0
+        let social = obj["socialMinutes"] as? Double ?? 0
+        let youtube = obj["youtubeMinutes"] as? Double ?? 0
+        let other = obj["otherMinutes"] as? Double ?? 0
+        timeBackMinutes = Int(adult + social + youtube + other)
     }
 
     private func loadStreak() {

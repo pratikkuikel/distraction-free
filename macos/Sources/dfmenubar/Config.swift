@@ -6,12 +6,16 @@ enum Config {
     static let statsFile = "\(stateDir)/stats.json"
     static let socialToggleFile = "\(stateDir)/social-toggle.json"
     static let streakFile = "\(stateDir)/streak.json"
+    static let timeBackFile = "\(stateDir)/timeback.json"
+    static let installDir = ProcessInfo.processInfo.environment["DF_INSTALL_DIR"] ?? "/usr/local/opt/distraction-free"
+    static let quotesPath = "\(installDir)/quotes.txt"
 
-    // Rough, clearly-labeled estimates for the stats card — same spirit as
-    // Brave/uBlock's own bandwidth/time-saved numbers: illustrative, not
-    // measured.
+    // Rough, clearly-labeled bandwidth estimate for the stats card — same
+    // spirit as Brave/uBlock's own numbers: illustrative, not measured.
+    // Time back uses real per-category incrementing counters instead (see
+    // TimeBack.swift in the daemon) since "adult" and "one ad request"
+    // clearly aren't worth the same number of minutes.
     static let estimatedKBPerBlock: Double = 45
-    static let estimatedSecondsPerBlock: Double = 6
     static let disableLogFile: String = {
         let base = NSHomeDirectory() + "/Library/Application Support/distraction-free"
         try? FileManager.default.createDirectory(atPath: base, withIntermediateDirectories: true)

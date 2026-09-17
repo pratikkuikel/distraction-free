@@ -23,6 +23,14 @@ struct MenubarContentView: View {
 
             statsCard
 
+            if !state.todayQuote.isEmpty {
+                Text(state.todayQuote)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .italic()
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             VStack(alignment: .leading, spacing: 4) {
                 statusRow("Adult / gambling / piracy", "Always blocked")
                 statusRow("VPN / proxy / Tor bypass", "Always blocked")
@@ -94,12 +102,18 @@ struct MenubarContentView: View {
             HStack(alignment: .firstTextBaseline, spacing: 18) {
                 statBlock(value: "\(state.totalBlocked)", label: "Blocked", color: .orange)
                 statBlock(value: String(format: "%.1f MB", state.estimatedMBSaved), label: "Est. saved", color: .purple)
-                statBlock(value: "\(state.estimatedMinutesSaved)m", label: "Est. time back", color: .primary)
+                statBlock(value: formattedTimeBack, label: "Est. time back", color: .green)
             }
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.05)))
+    }
+
+    private var formattedTimeBack: String {
+        let hours = state.timeBackMinutes / 60
+        let minutes = state.timeBackMinutes % 60
+        return hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m"
     }
 
     private func statBlock(value: String, label: String, color: Color) -> some View {

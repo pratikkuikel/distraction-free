@@ -19,7 +19,9 @@ sudo cp "$REPO_ROOT/.build/release/dfdaemon" "$INSTALL_DIR/dfdaemon"
 sudo cp "$REPO_ROOT/Scripts/run-daemon.sh" "$INSTALL_DIR/run-daemon.sh"
 sudo cp "$REPO_ROOT/Scripts/update-blocklist.sh" "$INSTALL_DIR/update-blocklist.sh"
 sudo cp "$REPO_ROOT/../shared/social-domains.txt" "$INSTALL_DIR/social-domains.txt"
+sudo cp "$REPO_ROOT/../shared/quotes.txt" "$INSTALL_DIR/quotes.txt"
 sudo chmod 755 "$INSTALL_DIR/dfdaemon" "$INSTALL_DIR/update-blocklist.sh" "$INSTALL_DIR/run-daemon.sh"
+sudo chmod 644 "$INSTALL_DIR/quotes.txt"
 sudo chmod 755 "$STATE_DIR" "$CONFIG_DIR" # menubar app (unprivileged) needs to write the social toggle + read stats
 
 echo "Fetching initial blocklists..."

@@ -22,10 +22,15 @@ curl -fsSL "$BASE_URL/doh-vpn-proxy-bypass.txt" -o "$TMP/bypass.txt"
 grep -hv '^#' "$TMP"/*.txt | sed 's/^\*\.//' | sort -u > "$CONFIG_DIR/always-on.txt"
 echo "  -> $(wc -l < "$CONFIG_DIR/always-on.txt") always-on domains"
 
+# Adult saved separately (not just merged into always-on.txt): the daemon
+# uses it to tell "adult" blocks apart from gambling/piracy/bypass blocks
+# for the per-category time-back estimate.
+grep -hv '^#' "$TMP/nsfw.txt" | sed 's/^\*\.//' | sort -u > "$CONFIG_DIR/adult.txt"
+
 cp "$INSTALL_DIR/social-domains.txt" "$CONFIG_DIR/social.txt"
 echo "  -> $(grep -cv '^#' "$CONFIG_DIR/social.txt") social-media domains"
 
-chmod 644 "$CONFIG_DIR/always-on.txt" "$CONFIG_DIR/social.txt"
+chmod 644 "$CONFIG_DIR/always-on.txt" "$CONFIG_DIR/adult.txt" "$CONFIG_DIR/social.txt"
 
 if launchctl print system/com.distractionfree.daemon >/dev/null 2>&1; then
     echo "Restarting daemon to pick up the new lists..."
