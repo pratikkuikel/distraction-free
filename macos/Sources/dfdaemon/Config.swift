@@ -27,23 +27,28 @@ enum Config {
     static let installDir = ProcessInfo.processInfo.environment["DF_INSTALL_DIR"] ?? "/usr/local/opt/distraction-free"
     static let quotesPath = "\(installDir)/quotes.txt"
 
-    // Rough, clearly-labeled per-category estimates for the "time back"
-    // stat — same spirit as Brave/uBlock's own bandwidth/time-saved
-    // numbers: illustrative, not measured. A blocked adult-site visit
-    // plausibly cost a lot more time than a single blocked ad request, so
-    // this is a flat estimate *per blocked attempt*, credited to a running
-    // counter the moment the block happens — not derived from raw counts.
-    static let adultMinutesPerBlock: Double = 60
-    static let socialMinutesPerBlock: Double = 60
-    static let youtubeMinutesPerBlock: Double = 30
-    static let otherMinutesPerBlock: Double = 15 // gambling/piracy/bypass
+    // Rough, clearly-labeled per-category estimates for the "time back" /
+    // "data back" stats — same spirit as Brave/uBlock's own bandwidth/time-
+    // saved numbers: illustrative, not measured. Deliberately conservative:
+    // one blocked DNS query is one attempted connection, not a whole
+    // session, so this is priced close to a single blocked request (~1 MB,
+    // ~10s) rather than an assumed browsing session — the old numbers (up
+    // to 60 min / 150 MB per block) compounded into implausible totals
+    // (weeks of "time back" after a day of normal use) that undermined the
+    // stat's credibility. Still a flat estimate *per blocked attempt*,
+    // credited the moment the block happens, not derived from raw counts.
+    static let adultMinutesPerBlock: Double = 0.2   // 12s
+    static let socialMinutesPerBlock: Double = 0.2  // 12s
+    static let youtubeMinutesPerBlock: Double = 0.3 // 18s — video preview/thumbnail fetch is a bit heavier
+    static let otherMinutesPerBlock: Double = 0.1   // 6s — gambling/piracy/bypass attempts are typically just a page load
 
-    // Same per-category logic for data: video-heavy categories cost far
-    // more bandwidth per visit than a blocked gambling/piracy attempt.
-    static let adultMBPerBlock: Double = 150
-    static let socialMBPerBlock: Double = 80
-    static let youtubeMBPerBlock: Double = 200
-    static let otherMBPerBlock: Double = 20
+    // Same conservative logic for data: video-heavy categories still cost
+    // a bit more per attempt than a blocked gambling/piracy request, but
+    // nowhere near a full session's worth.
+    static let adultMBPerBlock: Double = 1.0
+    static let socialMBPerBlock: Double = 1.0
+    static let youtubeMBPerBlock: Double = 2.0
+    static let otherMBPerBlock: Double = 0.5
 
     static let upstreamDNS = "1.1.1.1"
     static let upstreamPort: UInt16 = 53

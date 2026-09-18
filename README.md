@@ -51,21 +51,57 @@ never block WhatsApp).
 - `shared/` — the hand-maintained social-media domain list both platforms use
 - `docs/` — MVP scope, privacy, troubleshooting
 
-## Download
+## What to know before installing
+
+- **This changes system-level network settings.** On macOS it points your Mac's DNS at a local
+  resolver and installs a root LaunchDaemon; on Android it runs an always-on VPN (locally, not to any
+  remote server — see [Design principles](#design-principles)). That's the mechanism, not a side
+  effect — there's no lighter-weight way to filter every app on the device.
+- **Expect OS security warnings — that's normal, not a red flag.** The binaries aren't signed by an
+  Apple Developer ID or distributed via the Play Store (both require accounts/fees this project
+  deliberately avoids), so macOS Gatekeeper and Android's "Install unknown apps"/Play Protect will
+  flag it. The install steps below handle the Gatekeeper flag for you; Android will ask you to
+  confirm once per install.
+- **It is not tamper-proof against yourself, on purpose.** You have root/admin on your own device, so
+  nothing here claims otherwise — see [Design principles](#design-principles) for the actual approach
+  (friction, not a lock you can't pick).
+- **The "Disable protection" button doesn't disable anything.** It logs the attempt, shows a 24h
+  countdown, and that countdown never completes. This is intentional, not a bug — see
+  [Uninstall](#uninstall) for the real (deliberately manual) way off.
+- **Nothing leaves your device.** No account, no server, no analytics. The only network calls this
+  project makes on its own are fetching public blocklists (HaGeZi, and a community YouTube-IP list)
+  and DNS resolution itself — see `docs/privacy.md`.
+- **The "time saved" / "data saved" stats are illustrative estimates, not measurements** — a small,
+  deliberately conservative flat credit per blocked connection attempt (~10-20s, ~1-2MB depending on
+  category), not derived from anything actually measured. Same spirit as Brave/uBlock's own
+  bandwidth-saved counters.
+
+## Installation
 
 Prebuilt installers are attached to each [GitHub Release](../../releases) — no Xcode or Android
-Studio required:
+Studio required.
 
-- **macOS:** download `distraction-free-macos.zip`, unzip it, then run `./install-release.sh` from
-  inside the extracted folder (asks for your password once, to install the LaunchDaemon and point
-  your Mac's DNS at it). Since the binaries aren't notarized (no Apple Developer account), the script
-  clears the Gatekeeper quarantine flag itself.
-- **Android:** download `distraction-free-android.apk`, enable "Install unknown apps" for your
-  browser/file manager, and install it. Grant the VPN permission when prompted, and — for real
-  bypass-resistance — enable **Settings → VPN → Always-on VPN + Block connections without VPN** for it
-  manually. Every release is signed with the same key, so installing a new version over an old one
-  updates in place and keeps your streak/stats data; only switching between a locally-built debug APK
-  and a signed release build requires a one-time uninstall.
+**macOS:**
+1. Download `distraction-free-macos.zip` from the [latest release](../../releases/latest) and unzip it.
+2. Open Terminal, `cd` into the extracted folder, and run `./install-release.sh`.
+3. Enter your password when prompted (once — installs the LaunchDaemon and points your Mac's DNS at
+   it). The script clears the Gatekeeper quarantine flag on the binaries itself, so you won't hit an
+   "unidentified developer" dialog.
+4. Done — the daemon starts filtering immediately, and a shield icon appears in your menu bar.
+
+**Android:**
+1. Download `distraction-free-android.apk` from the [latest release](../../releases/latest) on the
+   phone itself (or transfer it over).
+2. Open the downloaded file. Android will prompt to allow installs from that source ("Install unknown
+   apps") — allow it, then install.
+3. Open the app and grant the VPN permission when prompted — this is what lets it filter traffic.
+4. For real bypass-resistance, go to **Settings → VPN → Distraction Free → Always-on VPN + Block
+   connections without VPN**. This is a genuine OS-level guarantee (the app can't fake it) that the
+   phone has no network access at all unless this VPN is running.
+5. Every release is signed with the same key, so installing a new version over an old one updates in
+   place and keeps your streak/stats data. (Only switching between a locally-built debug APK and a
+   signed release build ever requires a one-time uninstall, since Android treats a different signing
+   key as a different app.)
 
 New releases build automatically from a git tag (`vX.Y.Z`) via
 [`.github/workflows/release.yml`](.github/workflows/release.yml).

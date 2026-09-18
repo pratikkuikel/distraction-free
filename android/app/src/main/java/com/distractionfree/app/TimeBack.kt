@@ -13,18 +13,26 @@ class TimeBack(private val context: Context) {
     companion object {
         // Rough, clearly-labeled per-category estimates — same spirit as
         // Brave/uBlock's own bandwidth/time-saved numbers: illustrative,
-        // not measured.
-        const val ADULT_MINUTES_PER_BLOCK = 60.0
-        const val SOCIAL_MINUTES_PER_BLOCK = 60.0
-        const val YOUTUBE_MINUTES_PER_BLOCK = 30.0
-        const val OTHER_MINUTES_PER_BLOCK = 15.0 // gambling/piracy/bypass
+        // not measured. Deliberately conservative: one blocked DNS query is
+        // one attempted connection, not a whole session, so this is priced
+        // close to a single blocked request (~1 MB, ~10s) rather than an
+        // assumed browsing session — the old numbers (up to 60 min / 150 MB
+        // per block) compounded into implausible totals (weeks of "time
+        // back" after a day of normal use). Minute values are clean
+        // multiples of 0.1 to avoid truncation error in the tenths-based
+        // storage below.
+        const val ADULT_MINUTES_PER_BLOCK = 0.2   // 12s
+        const val SOCIAL_MINUTES_PER_BLOCK = 0.2  // 12s
+        const val YOUTUBE_MINUTES_PER_BLOCK = 0.3 // 18s — video preview/thumbnail fetch is a bit heavier
+        const val OTHER_MINUTES_PER_BLOCK = 0.1   // 6s — gambling/piracy/bypass attempts are typically just a page load
 
-        // Same per-category logic for data: video-heavy categories cost far
-        // more bandwidth per visit than a blocked gambling/piracy attempt.
-        const val ADULT_MB_PER_BLOCK = 150.0
-        const val SOCIAL_MB_PER_BLOCK = 80.0
-        const val YOUTUBE_MB_PER_BLOCK = 200.0
-        const val OTHER_MB_PER_BLOCK = 20.0
+        // Same conservative logic for data: video-heavy categories still
+        // cost a bit more per attempt than a blocked gambling/piracy
+        // request, but nowhere near a full session's worth.
+        const val ADULT_MB_PER_BLOCK = 1.0
+        const val SOCIAL_MB_PER_BLOCK = 1.0
+        const val YOUTUBE_MB_PER_BLOCK = 2.0
+        const val OTHER_MB_PER_BLOCK = 0.5
     }
 
     // Stored as tenths in AtomicLongs so concurrent increments from multiple
