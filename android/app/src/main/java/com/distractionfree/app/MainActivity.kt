@@ -278,10 +278,19 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
-    /** Opt-in only, local-only — see docs/privacy.md. */
+    /**
+     * Opt-in only, local-only — see docs/privacy.md. Behaves like a
+     * recording: starting clears any previous log so the export is exactly
+     * this session's reproduction, stopping just stops writing — the file
+     * stays put, ready to export.
+     */
     private fun setLoggingEnabled(enabled: Boolean) {
-        val file = AppPaths.loggingEnabledFile(this)
-        if (enabled) file.createNewFile() else file.delete()
+        if (enabled) {
+            AppPaths.diagnosticLogFile(this).delete()
+            AppPaths.loggingEnabledFile(this).createNewFile()
+        } else {
+            AppPaths.loggingEnabledFile(this).delete()
+        }
     }
 
     /** Shares the diagnostic log via any installed app (Files, email, GitHub, etc.) to attach to an issue. */

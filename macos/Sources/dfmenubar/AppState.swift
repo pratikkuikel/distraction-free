@@ -77,12 +77,15 @@ final class AppState: ObservableObject {
         loggingEnabled = FileManager.default.fileExists(atPath: Config.loggingEnabledFile)
     }
 
-    /// Opt-in only, local-only — see docs/privacy.md. Turning this on logs
-    /// per-query domain-level block/allow decisions (needed to actually
-    /// debug a "why was X blocked/allowed" report) to a 5MB-capped file;
-    /// off by default, and nothing is ever sent anywhere automatically.
+    /// Opt-in only, local-only — see docs/privacy.md. Behaves like a
+    /// recording: starting clears any previous log so the export is exactly
+    /// this session's reproduction (not mixed with whatever was logged last
+    /// time), stopping just stops writing — the file stays put, ready to
+    /// export. Logs per-query domain-level block/allow decisions, capped at
+    /// 5MB; nothing is ever sent anywhere automatically.
     func setLoggingEnabled(_ enabled: Bool) {
         if enabled {
+            try? FileManager.default.removeItem(atPath: Config.diagnosticLogFile)
             FileManager.default.createFile(atPath: Config.loggingEnabledFile, contents: nil)
         } else {
             try? FileManager.default.removeItem(atPath: Config.loggingEnabledFile)
