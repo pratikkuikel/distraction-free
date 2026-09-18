@@ -82,6 +82,9 @@ never block WhatsApp).
   a [bug report](.github/ISSUE_TEMPLATE/bug_report.yml). It's local-only until you explicitly export
   it, and only ever records domain-level block/allow decisions, never full URLs — see
   `docs/privacy.md`.
+- **A toggle change can take up to ~a minute to show up in a browser tab you already had open** —
+  that tab isn't redoing a DNS lookup for a connection it's already holding. A fresh tab reflects the
+  change immediately. See `docs/troubleshooting.md` for why.
 
 ## Installation
 

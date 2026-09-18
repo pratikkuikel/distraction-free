@@ -73,6 +73,27 @@ be silently re-granted by a boot receiver.
 
 ## Both platforms
 
+**A toggle/block change doesn't seem to take effect for a bit**
+This is expected, not a bug — DNS blocking has a few layers of caching between "the rule changed"
+and "your browser actually notices":
+- **Our own DNS decision** changes almost instantly (the daemon/VPN re-checks the toggle file every
+  couple seconds).
+- **The OS-level DNS resolver cache** can hold onto the old answer for a while after that, since our
+  blocked responses don't carry a negative-cache TTL (we're a minimal DNS server, no SOA record) —
+  the OS falls back to its own default caching duration. Both platforms now flush this automatically
+  the moment a toggle actually changes (macOS: the daemon signals `mDNSResponder` directly, no
+  restart; Android: the VPN restarts, which gives every app a fresh network and invalidates the
+  cached results tied to the old one — a brief connectivity blip, same tradeoff already accepted for
+  blocklist updates).
+- **The browser itself** is the one layer we can't reach into. A tab that was already open and
+  already connected before you flipped the toggle won't redo a DNS lookup — it just keeps using the
+  connection it already has. **Open a brand-new tab** (don't just reload the old one) to see the
+  current state; if that's still wrong, it's a real bug, not caching.
+
+In practice: expect it to take a few seconds up to roughly a minute for a toggle change to be
+visible in a browser you were actively using at the time. A tab you open fresh after the toggle
+change reflects it immediately.
+
 **Safety valve**
 Neither platform can ever fully block emergency dialing, core OS update checks, or connectivity
 diagnostics — those don't go through DNS/HTTP in a way either implementation intercepts, and
