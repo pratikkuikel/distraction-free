@@ -92,12 +92,18 @@ Prebuilt installers are attached to each [GitHub Release](../../releases) — no
 Studio required.
 
 **macOS:**
-1. Download `distraction-free-macos.zip` from the [latest release](../../releases/latest) and unzip it.
-2. Open Terminal, `cd` into the extracted folder, and run `./install-release.sh`.
-3. Enter your password when prompted (once — installs the LaunchDaemon and points your Mac's DNS at
-   it). The script clears the Gatekeeper quarantine flag on the binaries itself, so you won't hit an
-   "unidentified developer" dialog.
+1. Download `distraction-free.pkg` from the [latest release](../../releases/latest).
+2. Open it and click through the installer. Since this isn't signed with a paid Apple Developer ID,
+   Gatekeeper will refuse to open it the first time ("Apple could not verify..." or "unidentified
+   developer") — right-click (or Control-click) the `.pkg` and choose **Open** instead, which offers a
+   bypass the normal double-click doesn't.
+3. Enter your password when prompted (once — Installer.app handles this itself; everything after that
+   runs as root with no further prompts).
 4. Done — the daemon starts filtering immediately, and a shield icon appears in your menu bar.
+
+Prefer the old zip+script method, or don't want to run an unsigned installer? `distraction-free-macos.zip`
+is still attached to every release — download it, unzip, and run `./install-release.sh` from Terminal
+instead. Both do the same install; the `.pkg` just does it without opening Terminal.
 
 **Android:**
 1. Download `distraction-free-android.apk` from the [latest release](../../releases/latest) on the
