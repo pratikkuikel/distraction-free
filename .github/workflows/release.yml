@@ -19,8 +19,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Resolve version from tag
+        id: version
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "name=${TAG#v}" >> "$GITHUB_OUTPUT"
+
       - name: Build dfdaemon + dfmenubar (release)
         run: swift build -c release --package-path macos
+
+      - name: Build .pkg installer
+        run: macos/Scripts/build-pkg.sh "${{ steps.version.outputs.name }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distraction-free-pkg
+          path: distraction-free.pkg
 
       - name: Stage release bundle
         run: |
@@ -100,6 +114,9 @@ jobs:
           name: distraction-free-macos
       - uses: actions/download-artifact@v4
         with:
+          name: distraction-free-pkg
+      - uses: actions/download-artifact@v4
+        with:
           name: distraction-free-android
 
       - name: Rename Android artifact
@@ -111,4 +128,5 @@ jobs:
           generate_release_notes: true
           files: |
             distraction-free-macos.zip
+            distraction-free.pkg
             distraction-free-android.apk

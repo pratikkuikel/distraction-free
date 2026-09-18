@@ -1,0 +1,125 @@
+#!/bin/bash
+# Runs as root automatically — Installer.app already got the one admin
+# password prompt before this script starts, so nothing here needs its own
+# `sudo`. This is the pkg equivalent of Scripts/install-release.sh; keep the
+# two in sync if the install steps ever change.
+#
+# Safe to re-run for updates: never touches CONFIG_DIR/STATE_DIR contents
+# beyond what the payload/blocklist fetch below does, so stats, streaks, and
+# time/data-back counters survive an update.
+set -euo pipefail
+
+INSTALL_DIR="/usr/local/opt/distraction-free"
+CONFIG_DIR="/usr/local/etc/distraction-free"
+STATE_DIR="/usr/local/var/distraction-free"
+
+# pkgbuild's payload already placed dfdaemon/dfmenubar/scripts/LaunchDaemon
+# plists on disk (root-owned by default) — this script just sets permissions
+# and does the runtime setup that isn't a static file: config/state dirs,
+# the initial blocklist fetch, service bootstrap, DNS, and the per-user
+# LaunchAgent (which can't be a payload file since it must be owned by and
+# registered for whichever user is actually logged in, not a build-time
+# guess).
+
+# bootout is asynchronous — launchd doesn't always finish tearing a service
+# down before the command returns, so bootstrap-ing it right back
+# immediately after can lose the race and fail with a transient
+# "Input/output error" (hit this exact thing testing manually: a
+# bootout+bootstrap pair for a live KeepAlive service failed here, which
+# under `set -e` aborted the whole script AFTER bootout had already
+# unloaded the previously-working daemon — leaving DNS filtering off until
+# it was manually restarted). Wait for the domain to actually confirm the
+# service is gone before reloading it, and retry the bootstrap itself a
+# couple of times as a second layer of defense.
+reload_service() {
+    local domain="$1" label="$2" plist="$3"
+    launchctl bootout "$domain/$label" >/dev/null 2>&1 || true
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        launchctl print "$domain/$label" >/dev/null 2>&1 || break
+        sleep 0.3
+    done
+    local attempt
+    for attempt in 1 2 3; do
+        if launchctl bootstrap "$domain" "$plist" 2>&1; then
+            return 0
+        fi
+        echo "bootstrap of $label failed (attempt $attempt), retrying..." >&2
+        sleep 1
+    done
+    echo "bootstrap of $label failed after retries" >&2
+    return 1
+}
+
+mkdir -p "$CONFIG_DIR" "$STATE_DIR"
+chmod 755 "$CONFIG_DIR" "$INSTALL_DIR"
+chmod 755 "$INSTALL_DIR/dfdaemon" "$INSTALL_DIR/update-blocklist.sh" "$INSTALL_DIR/run-daemon.sh" "$INSTALL_DIR/retry-blocklist-update.sh"
+chmod 644 "$INSTALL_DIR/quotes.txt" "$INSTALL_DIR/social-domains.txt"
+# STATE_DIR needs group-write, not just 755: the menubar app runs
+# unprivileged and writes social-toggle.json directly into it (daemon just
+# reads/applies it).
+chgrp staff "$STATE_DIR"
+chmod 775 "$STATE_DIR"
+chmod 755 /usr/local/bin/dfmenubar
+
+if [ ! -f "$CONFIG_DIR/always-on.txt" ]; then
+    echo "Fetching initial blocklists..."
+    DF_CONFIG_DIR="$CONFIG_DIR" DF_INSTALL_DIR="$INSTALL_DIR" "$INSTALL_DIR/update-blocklist.sh" || true
+else
+    echo "Existing blocklists found, leaving them — the daily 4am job will refresh them."
+fi
+
+echo "Starting the daemon + scheduled jobs..."
+reload_service system com.distractionfree.daemon /Library/LaunchDaemons/com.distractionfree.daemon.plist
+launchctl enable system/com.distractionfree.daemon
+
+reload_service system com.distractionfree.blocklist-update /Library/LaunchDaemons/com.distractionfree.blocklist-update.plist
+launchctl enable system/com.distractionfree.blocklist-update
+
+reload_service system com.distractionfree.blocklist-retry /Library/LaunchDaemons/com.distractionfree.blocklist-retry.plist
+launchctl enable system/com.distractionfree.blocklist-retry
+
+echo "Pointing this Mac's DNS at the daemon..."
+NETWORK_SERVICE=$(networksetup -listallnetworkservices | grep -v '^\*' | grep -v "^An asterisk" | head -1)
+networksetup -setdnsservers "$NETWORK_SERVICE" 127.0.0.2
+
+# The menubar app is a per-user login item, which has to be registered in
+# the GUI domain of whoever is actually logged into this Mac's console —
+# not root, and not necessarily whoever's `sudo`-related env this script
+# might inherit. /dev/console's owner is the reliable way to find that.
+CONSOLE_USER=$(stat -f%Su /dev/console)
+if [ -z "$CONSOLE_USER" ] || [ "$CONSOLE_USER" = "root" ]; then
+    echo "No logged-in console user found — skipping the menubar login item." >&2
+    echo "Installed. Log in and run: launchctl bootstrap gui/\$(id -u) ~/Library/LaunchAgents/com.distractionfree.menubar.plist"
+    exit 0
+fi
+CONSOLE_UID=$(id -u "$CONSOLE_USER")
+CONSOLE_HOME=$(dscl . -read "/Users/$CONSOLE_USER" NFSHomeDirectory | awk '{print $2}')
+
+echo "Installing menubar app as a login item for $CONSOLE_USER..."
+sudo -u "$CONSOLE_USER" mkdir -p "$CONSOLE_HOME/Library/LaunchAgents"
+cat > "$CONSOLE_HOME/Library/LaunchAgents/com.distractionfree.menubar.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.distractionfree.menubar</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/dfmenubar</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+</dict>
+</plist>
+PLIST
+chown "$CONSOLE_USER:staff" "$CONSOLE_HOME/Library/LaunchAgents/com.distractionfree.menubar.plist"
+
+reload_service "gui/$CONSOLE_UID" com.distractionfree.menubar "$CONSOLE_HOME/Library/LaunchAgents/com.distractionfree.menubar.plist"
+
+echo ""
+echo "Installed. The daemon is filtering DNS system-wide now (test: dig pornhub.com — should NXDOMAIN)."
+echo "The menubar icon (shield) is running and will also start automatically at login."
+exit 0
