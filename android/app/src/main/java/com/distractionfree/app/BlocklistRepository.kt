@@ -12,9 +12,24 @@ object BlocklistRepository {
         return trie
     }
 
+    // fbcdn.net is deliberately excluded from shared/social-domains.txt with
+    // a macOS-specific justification: macOS blocks by domain only (no
+    // per-app exemption), and fbcdn.net is Meta's *shared* CDN that WhatsApp
+    // Desktop also uses, so blocking it broke WhatsApp there. That
+    // constraint doesn't hold on Android — WhatsApp is already exempted at
+    // the UID level via AppExemptions/addDisallowedApplication, so its
+    // traffic never reaches this trie regardless of domain rules. Without
+    // fbcdn.net, Instagram (not exempted) kept working: its own domains
+    // (instagram.com, cdninstagram.com) got blocked but photo/video content
+    // loaded fine from fbcdn.net edge nodes instead. Real-device log showed
+    // z-m-gateway.facebook.com being correctly blocked on every retry while
+    // the app still worked — this was why.
+    private val androidOnlySocialDomains = listOf("fbcdn.net")
+
     fun buildSocialTrie(context: Context): DomainTrie {
         val trie = DomainTrie()
         load(AppPaths.socialList(context), trie)
+        androidOnlySocialDomains.forEach { trie.insert(it) }
         return trie
     }
 
