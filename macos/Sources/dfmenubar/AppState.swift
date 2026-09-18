@@ -97,12 +97,31 @@ final class AppState: ObservableObject {
     /// attach to a GitHub issue. No-op if logging was never turned on.
     func exportLog() {
         guard FileManager.default.fileExists(atPath: Config.diagnosticLogFile) else { return }
+        // dfmenubar ships as a bare binary with no app bundle/Info.plist at
+        // all (installed straight to /usr/local/bin, run via a LaunchAgent),
+        // so there's no Dock icon or window-server identity for it to
+        // activate into. NSSavePanel.runModal() under those conditions can
+        // create a modal session for a panel that never actually becomes
+        // visible/frontmost — the app then sits in a phantom modal loop:
+        // every click elsewhere just beeps, with no visible dialog to act
+        // on. Temporarily promoting to a regular app (Dock icon appears
+        // only for the moment the dialog is up) makes the window server
+        // treat it like a normal app that can own and front a window, and
+        // using the non-blocking begin() API instead of runModal() means
+        // even if positioning is ever off again, it can't hang input.
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "distraction-free-log.txt"
         panel.canCreateDirectories = true
-        if panel.runModal() == .OK, let url = panel.url {
-            try? FileManager.default.removeItem(at: url)
-            try? FileManager.default.copyItem(atPath: Config.diagnosticLogFile, toPath: url.path)
+        panel.level = .modalPanel
+        panel.makeKeyAndOrderFront(nil)
+        panel.begin { [weak panel] result in
+            if result == .OK, let url = panel?.url {
+                try? FileManager.default.removeItem(at: url)
+                try? FileManager.default.copyItem(atPath: Config.diagnosticLogFile, toPath: url.path)
+            }
+            NSApp.setActivationPolicy(.accessory)
         }
     }
 
