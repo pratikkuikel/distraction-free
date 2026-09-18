@@ -37,6 +37,10 @@ class UdpNat(private val vpnService: BlockerVpnService, private val output: File
             vpnService.logDiagnostic("BLOCK youtube-cdn-ip $dstIpString:${packet.dstPort} (udp)")
             return // see YoutubeIpBlocklist for why
         }
+        if (vpnService.isMetaCdnBlockedNow(packet.dstAddr)) {
+            vpnService.logDiagnostic("BLOCK meta-cdn-ip $dstIpString:${packet.dstPort} (udp)")
+            return // see MetaCdnIpBlocklist for why
+        }
 
         val key = "${packet.srcAddr.joinToString(".") { (it.toInt() and 0xFF).toString() }}:${packet.srcPort}-" +
                    "${packet.dstAddr.joinToString(".") { (it.toInt() and 0xFF).toString() }}:${packet.dstPort}"

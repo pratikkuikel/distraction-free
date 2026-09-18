@@ -20,6 +20,10 @@ object AppPaths {
     /// Community-maintained YouTube CDN IPv4 ranges — backstop for when the
     /// app resolves googlevideo.com without asking our DNS server at all.
     fun youtubeCidrList(context: Context) = File(context.filesDir, "youtube-cidr.txt")
+    /// Community-maintained Meta (Facebook/Instagram) CDN IPv4 ranges —
+    /// backstop for when the app resolves its CDN without asking our DNS
+    /// server at all. See MetaCdnIpBlocklist.
+    fun metaCidrList(context: Context) = File(context.filesDir, "meta-cidr.txt")
     /// Opt-in diagnostic logging — see DiagnosticLog.kt.
     fun loggingEnabledFile(context: Context) = File(stateDir(context), "logging-enabled")
     fun diagnosticLogFile(context: Context) = File(stateDir(context), "diagnostic.log")

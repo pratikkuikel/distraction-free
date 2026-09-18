@@ -16,6 +16,8 @@ object BlocklistUpdater {
     private const val BASE_URL = "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard"
     private const val YOUTUBE_CIDR_URL =
         "https://raw.githubusercontent.com/touhidurrr/iplist-youtube/main/lists/cidr4.txt"
+    private const val META_CIDR_URL =
+        "https://raw.githubusercontent.com/lord-alfred/ipranges/main/facebook/ipv4_merged.txt"
     private val ALWAYS_ON_SOURCES = listOf(
         "$BASE_URL/nsfw.txt",
         "$BASE_URL/gambling.medium.txt",
@@ -58,6 +60,11 @@ object BlocklistUpdater {
             try {
                 val cidrLines = fetchLines(YOUTUBE_CIDR_URL)
                 AppPaths.youtubeCidrList(context).writeText(cidrLines.joinToString("\n"))
+            } catch (e: Exception) { /* keep whatever was there before */ }
+
+            try {
+                val cidrLines = fetchLines(META_CIDR_URL)
+                AppPaths.metaCidrList(context).writeText(cidrLines.joinToString("\n"))
             } catch (e: Exception) { /* keep whatever was there before */ }
 
             true

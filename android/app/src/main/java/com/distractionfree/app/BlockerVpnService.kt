@@ -70,6 +70,10 @@ class BlockerVpnService : VpnService() {
     fun isYoutubeCdnBlockedNow(addr: ByteArray): Boolean =
         schedule.isSocialBlockedNow() && YoutubeIpBlocklist.isBlocked(addr)
 
+    /** Schedule-gated IP backstop for TcpNat/UdpNat — see MetaCdnIpBlocklist. */
+    fun isMetaCdnBlockedNow(addr: ByteArray): Boolean =
+        schedule.isSocialBlockedNow() && MetaCdnIpBlocklist.isBlocked(addr)
+
     /**
      * Lets TcpNat/UdpNat record their IP-level blocks (DnsBypassBlocklist,
      * YoutubeIpBlocklist) into the same diagnostic log as DNS decisions —
@@ -92,6 +96,7 @@ class BlockerVpnService : VpnService() {
         socialTrie = BlocklistRepository.buildSocialTrie(this)
         youtubeTrie = BlocklistRepository.buildYoutubeTrie()
         YoutubeIpBlocklist.load(this)
+        MetaCdnIpBlocklist.load(this)
         registerNetworkCallback()
     }
 
@@ -331,6 +336,7 @@ class BlockerVpnService : VpnService() {
                 adultTrie = BlocklistRepository.buildAdultTrie(this)
                 socialTrie = BlocklistRepository.buildSocialTrie(this)
                 YoutubeIpBlocklist.load(this)
+                MetaCdnIpBlocklist.load(this)
                 BlocklistUpdateScheduler.markUpdateSucceeded(this)
                 BlocklistUpdateScheduler.scheduleNext(this)
             } else {
