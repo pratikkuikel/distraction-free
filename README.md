@@ -1,4 +1,4 @@
-# distraction-free
+# <img src="docs/logo.png" alt="" width="32" height="32" valign="middle"> distraction-free
 
 **[Download / website →](https://pratikkuikel.github.io/distraction-free/)**
 
