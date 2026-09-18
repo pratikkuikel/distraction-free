@@ -14,6 +14,8 @@ import java.net.URL
  */
 object BlocklistUpdater {
     private const val BASE_URL = "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard"
+    private const val YOUTUBE_CIDR_URL =
+        "https://raw.githubusercontent.com/touhidurrr/iplist-youtube/main/lists/cidr4.txt"
     private val ALWAYS_ON_SOURCES = listOf(
         "$BASE_URL/nsfw.txt",
         "$BASE_URL/gambling.medium.txt",
@@ -49,6 +51,15 @@ object BlocklistUpdater {
             context.assets.open("social-domains.txt").use { input ->
                 AppPaths.socialList(context).outputStream().use { output -> input.copyTo(output) }
             }
+
+            // Best-effort: this is a backstop, not a core category — a
+            // failed fetch here (e.g. GitHub raw unreachable) shouldn't
+            // fail the whole update.
+            try {
+                val cidrLines = fetchLines(YOUTUBE_CIDR_URL)
+                AppPaths.youtubeCidrList(context).writeText(cidrLines.joinToString("\n"))
+            } catch (e: Exception) { /* keep whatever was there before */ }
+
             true
         } catch (e: Exception) {
             false

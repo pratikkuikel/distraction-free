@@ -166,6 +166,13 @@ class TcpNat(private val vpnService: BlockerVpnService, private val output: File
 
         if (existing == null) {
             if (!seg.flagSyn) return // unknown connection, not a new one — drop
+            if (DnsBypassBlocklist.isBlocked(seg.dstAddr) || vpnService.isYoutubeCdnBlockedNow(seg.dstAddr)) {
+                val rst = TcpSegment.build(seg.dstAddr, seg.srcAddr, seg.dstPort, seg.srcPort,
+                    0, seg.seq + 1, syn = false, ackFlag = true, fin = false, rst = true, psh = false,
+                    window = 0, payload = ByteArray(0))
+                try { output.write(rst) } catch (e: Exception) {}
+                return
+            }
             if (!allowedByRateLimit()) return // silent drop: let the client's own TCP retransmission spread the burst out
             val destKey = destinationKey(seg.dstAddr, seg.dstPort)
             if (activeCount.get() >= MAX_CONCURRENT_CONNECTIONS) {

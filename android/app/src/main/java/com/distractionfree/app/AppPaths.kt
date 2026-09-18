@@ -17,4 +17,7 @@ object AppPaths {
     /// gambling/piracy/bypass for the time-back estimate. The actual block
     /// decision still uses the single merged always-on.txt trie.
     fun adultList(context: Context) = File(context.filesDir, "adult.txt")
+    /// Community-maintained YouTube CDN IPv4 ranges — backstop for when the
+    /// app resolves googlevideo.com without asking our DNS server at all.
+    fun youtubeCidrList(context: Context) = File(context.filesDir, "youtube-cidr.txt")
 }

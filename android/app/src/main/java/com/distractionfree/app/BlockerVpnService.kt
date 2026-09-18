@@ -64,6 +64,10 @@ class BlockerVpnService : VpnService() {
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var tcpNat: TcpNat? = null
     private var udpNat: UdpNat? = null
+
+    /** Schedule-gated IP backstop for TcpNat/UdpNat — see YoutubeIpBlocklist. */
+    fun isYoutubeCdnBlockedNow(addr: ByteArray): Boolean =
+        schedule.isSocialBlockedNow() && YoutubeIpBlocklist.isBlocked(addr)
     @Volatile private var upstreamDnsServers: List<InetAddress> = emptyList()
     @Volatile private var underlyingNetwork: Network? = null
 
@@ -77,6 +81,7 @@ class BlockerVpnService : VpnService() {
         adultTrie = BlocklistRepository.buildAdultTrie(this)
         socialTrie = BlocklistRepository.buildSocialTrie(this)
         youtubeTrie = BlocklistRepository.buildYoutubeTrie()
+        YoutubeIpBlocklist.load(this)
         registerNetworkCallback()
     }
 

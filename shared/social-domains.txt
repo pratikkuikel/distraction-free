@@ -12,6 +12,12 @@
 # exemption) this collaterally delayed/broke WhatsApp Desktop. Blocking
 # instagram.com/facebook.com's own domains already covers the intended
 # target without this collateral cost.
+#
+# googlevideo.com is the actual video/audio streaming CDN for YouTube
+# (watch pages/API/thumbnails use youtube.com/ytimg.com, but the video
+# bytes themselves come from *.googlevideo.com) — without it, YouTube
+# videos and Shorts kept playing even with the app/thumbnails blocked.
+# ggpht.com serves channel avatars and some thumbnails.
 
 instagram.com
 cdninstagram.com
@@ -31,5 +37,7 @@ youtube.com
 youtube-nocookie.com
 ytimg.com
 youtu.be
+googlevideo.com
+ggpht.com
 linkedin.com
 licdn.com
