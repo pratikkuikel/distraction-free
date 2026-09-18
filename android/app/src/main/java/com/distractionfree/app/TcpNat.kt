@@ -34,6 +34,17 @@ class TcpNat(private val vpnService: BlockerVpnService, private val output: File
         // internal queue silently stalling them.
         private const val MAX_CONCURRENT_CONNECTIONS = 40
 
+        // A dead peer that never sends FIN/RST (network handover, server
+        // crash, a middlebox silently dropping the flow — all routine on
+        // mobile) would otherwise block this connection's reader thread on
+        // read() forever, permanently occupying one of the 40 connection
+        // slots. Over a long uptime these accumulate until legitimate new
+        // connections start getting rejected even with real capacity free.
+        // A generous idle timeout reclaims them; it's long enough not to
+        // disrupt legitimate idle-but-alive connections (chat/notification
+        // long-polls etc.) between real activity.
+        private const val CONNECTION_IDLE_TIMEOUT_MS = 10 * 60 * 1000
+
         // Circuit breaker: on-device testing showed some app (an ad/analytics
         // SDK, most likely) retrying a failing destination hundreds of times
         // per second with no backoff — that alone can fill the whole pool
@@ -231,6 +242,7 @@ class TcpNat(private val vpnService: BlockerVpnService, private val output: File
                 val socket = Socket()
                 vpnService.protectAndBind(socket)
                 socket.connect(java.net.InetSocketAddress(dstIp, syn.dstPort), 4000)
+                socket.soTimeout = CONNECTION_IDLE_TIMEOUT_MS
                 conn.socket = socket
                 conn.state = State.ESTABLISHED
                 recordSuccess(destKey)
