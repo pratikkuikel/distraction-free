@@ -247,7 +247,16 @@ class MainActivity : AppCompatActivity() {
     private fun toggleSocialBlock() {
         val currentlyManuallyBlocked = schedule.readManualToggle()
         schedule.setManualToggle(!currentlyManuallyBlocked)
-        refresh()
+        // Android has no non-root API to flush the system DNS cache the way
+        // the macOS daemon can (killall -HUP mDNSResponder, it's already
+        // root) — a blocked/allowed domain can otherwise sit cached against
+        // the old answer for a while after the toggle flips, making it look
+        // like nothing happened. Restarting the VPN gives every app a fresh
+        // Network object, which does invalidate netd's cached DNS results
+        // tied to the old one. Same brief-connectivity-blip tradeoff already
+        // accepted for blocklist updates.
+        stopService(Intent(this, BlockerVpnService::class.java))
+        startVpnService()
     }
 
     private fun requestDisable() {

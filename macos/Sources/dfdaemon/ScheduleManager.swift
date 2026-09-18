@@ -35,8 +35,27 @@ final class ScheduleManager {
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             return
         }
+        let newValue = (obj["manualBlock"] as? Bool) ?? false
         lock.lock()
-        manualBlock = (obj["manualBlock"] as? Bool) ?? false
+        let changed = newValue != manualBlock
+        manualBlock = newValue
         lock.unlock()
+
+        // Our NXDOMAIN responses carry no negative-cache TTL (we're a
+        // minimal DNS server, no SOA record), so macOS's own resolver falls
+        // back to its own default caching duration — flipping the toggle
+        // off doesn't necessarily un-block a domain immediately from the
+        // user's point of view, it just looks like nothing happened for a
+        // bit. The daemon is already root, so it can just flush the
+        // resolver cache itself the moment the toggle actually changes,
+        // instead of waiting for that cache to expire on its own.
+        if changed { flushSystemDNSCache() }
+    }
+
+    private func flushSystemDNSCache() {
+        let task = Process()
+        task.launchPath = "/usr/bin/killall"
+        task.arguments = ["-HUP", "mDNSResponder"]
+        try? task.run()
     }
 }
