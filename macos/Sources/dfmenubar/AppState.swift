@@ -31,9 +31,24 @@ final class AppState: ObservableObject {
     init() {
         pickTodayQuote()
         refresh()
+    }
+
+    // Polling only runs while the dropdown is actually visible (driven by
+    // onAppear/onDisappear in MenubarContentView) — an unconditional 5s
+    // timer previously ran the whole time the app was open, which for a
+    // background menu-bar utility means 24/7, re-reading half a dozen
+    // small JSON files every 5 seconds for a UI almost never on screen.
+    func startPolling() {
+        guard timer == nil else { return }
+        refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             self?.refresh()
         }
+    }
+
+    func stopPolling() {
+        timer?.invalidate()
+        timer = nil
     }
 
     private func pickTodayQuote() {

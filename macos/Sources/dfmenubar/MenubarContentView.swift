@@ -92,6 +92,8 @@ struct MenubarContentView: View {
         }
         .padding(14)
         .frame(width: 300)
+        .onAppear { state.startPolling() }
+        .onDisappear { state.stopPolling() }
     }
 
     private var statsCard: some View {
