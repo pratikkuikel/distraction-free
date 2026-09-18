@@ -18,9 +18,10 @@ sudo mkdir -p "$INSTALL_DIR" "$CONFIG_DIR" "$STATE_DIR"
 sudo cp "$REPO_ROOT/.build/release/dfdaemon" "$INSTALL_DIR/dfdaemon"
 sudo cp "$REPO_ROOT/Scripts/run-daemon.sh" "$INSTALL_DIR/run-daemon.sh"
 sudo cp "$REPO_ROOT/Scripts/update-blocklist.sh" "$INSTALL_DIR/update-blocklist.sh"
+sudo cp "$REPO_ROOT/Scripts/retry-blocklist-update.sh" "$INSTALL_DIR/retry-blocklist-update.sh"
 sudo cp "$REPO_ROOT/../shared/social-domains.txt" "$INSTALL_DIR/social-domains.txt"
 sudo cp "$REPO_ROOT/../shared/quotes.txt" "$INSTALL_DIR/quotes.txt"
-sudo chmod 755 "$INSTALL_DIR/dfdaemon" "$INSTALL_DIR/update-blocklist.sh" "$INSTALL_DIR/run-daemon.sh"
+sudo chmod 755 "$INSTALL_DIR/dfdaemon" "$INSTALL_DIR/update-blocklist.sh" "$INSTALL_DIR/run-daemon.sh" "$INSTALL_DIR/retry-blocklist-update.sh"
 sudo chmod 644 "$INSTALL_DIR/quotes.txt"
 sudo chmod 755 "$CONFIG_DIR"
 # STATE_DIR needs group-write, not just 755: the menubar app runs unprivileged
@@ -44,6 +45,12 @@ sudo cp "$REPO_ROOT/LaunchDaemons/com.distractionfree.blocklist-update.plist" /L
 sudo launchctl bootout system/com.distractionfree.blocklist-update >/dev/null 2>&1 || true
 sudo launchctl bootstrap system /Library/LaunchDaemons/com.distractionfree.blocklist-update.plist
 sudo launchctl enable system/com.distractionfree.blocklist-update
+
+echo "Installing blocklist-update failsafe retry (every 30min, no-ops unless the daily update is overdue)..."
+sudo cp "$REPO_ROOT/LaunchDaemons/com.distractionfree.blocklist-retry.plist" /Library/LaunchDaemons/
+sudo launchctl bootout system/com.distractionfree.blocklist-retry >/dev/null 2>&1 || true
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.distractionfree.blocklist-retry.plist
+sudo launchctl enable system/com.distractionfree.blocklist-retry
 
 echo "Pointing this Mac's DNS at the daemon..."
 NETWORK_SERVICE=$(networksetup -listallnetworkservices | grep -v '^\*' | grep -v "^An asterisk" | head -1)

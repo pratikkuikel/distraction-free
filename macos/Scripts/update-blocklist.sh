@@ -7,6 +7,7 @@ set -euo pipefail
 
 CONFIG_DIR="${DF_CONFIG_DIR:-/usr/local/etc/distraction-free}"
 INSTALL_DIR="${DF_INSTALL_DIR:-/usr/local/opt/distraction-free}"
+STATE_DIR="${DF_STATE_DIR:-/usr/local/var/distraction-free}"
 BASE_URL="https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard"
 
 mkdir -p "$CONFIG_DIR"
@@ -36,4 +37,13 @@ if launchctl print system/com.distractionfree.daemon >/dev/null 2>&1; then
     echo "Restarting daemon to pick up the new lists..."
     launchctl kickstart -k system/com.distractionfree.daemon
 fi
+
+# Marks a successful run so the retry daemon (see
+# com.distractionfree.blocklist-retry.plist) knows not to bother — if this
+# script exits early above (curl failure, no network), this never gets
+# written, so "no recent success" is exactly the retry signal, no separate
+# failure-tracking needed.
+mkdir -p "$STATE_DIR"
+date +%s > "$STATE_DIR/last-blocklist-update"
+
 echo "Done."

@@ -291,11 +291,37 @@ class BlockerVpnService : VpnService() {
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
         networkCallback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) { isOnline = true }
+            override fun onAvailable(network: Network) {
+                isOnline = true
+                if (BlocklistUpdateScheduler.isRetryPending(this@BlockerVpnService)) retryBlocklistUpdateNow()
+            }
             override fun onLost(network: Network) { isOnline = cm.activeNetwork != null }
         }
         cm.registerNetworkCallback(request, networkCallback!!)
         isOnline = cm.activeNetwork != null
+    }
+
+    /**
+     * Failsafe path: a missed 4am update leaves a "retry pending" flag (see
+     * BlocklistUpdateScheduler). Rather than wait for the 30min backstop
+     * alarm, retry the moment this callback says connectivity is back.
+     * Reloads the tries in place instead of a full VPN stop/start, so this
+     * doesn't cause a connectivity blip for whatever's browsing right now.
+     */
+    private fun retryBlocklistUpdateNow() {
+        thread(name = "df-blocklist-retry") {
+            if (BlocklistUpdater.update(this)) {
+                Log.i("df-vpn", "blocklist retry succeeded, reloading in place")
+                alwaysOnTrie = BlocklistRepository.buildAlwaysOnTrie(this)
+                adultTrie = BlocklistRepository.buildAdultTrie(this)
+                socialTrie = BlocklistRepository.buildSocialTrie(this)
+                YoutubeIpBlocklist.load(this)
+                BlocklistUpdateScheduler.markUpdateSucceeded(this)
+                BlocklistUpdateScheduler.scheduleNext(this)
+            } else {
+                Log.w("df-vpn", "blocklist retry failed, will retry again on next connectivity change or backstop alarm")
+            }
+        }
     }
 
     private fun buildNotification(): Notification {

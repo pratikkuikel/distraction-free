@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.distractionfree.blocklist-retry</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/opt/distraction-free/retry-blocklist-update.sh</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>1800</integer>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>DF_CONFIG_DIR</key>
+        <string>/usr/local/etc/distraction-free</string>
+        <key>DF_INSTALL_DIR</key>
+        <string>/usr/local/opt/distraction-free</string>
+        <key>DF_STATE_DIR</key>
+        <string>/usr/local/var/distraction-free</string>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/usr/local/var/distraction-free/blocklist-update.log</string>
+    <key>StandardErrorPath</key>
+    <string>/usr/local/var/distraction-free/blocklist-update.log</string>
+</dict>
+</plist>

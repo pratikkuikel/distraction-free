@@ -30,9 +30,11 @@ jobs:
           cp macos/.build/release/dfmenubar "$STAGE/"
           cp macos/Scripts/run-daemon.sh "$STAGE/"
           cp macos/Scripts/update-blocklist.sh "$STAGE/"
+          cp macos/Scripts/retry-blocklist-update.sh "$STAGE/"
           cp macos/Scripts/install-release.sh "$STAGE/"
           cp macos/LaunchDaemons/com.distractionfree.daemon.plist "$STAGE/"
           cp macos/LaunchDaemons/com.distractionfree.blocklist-update.plist "$STAGE/"
+          cp macos/LaunchDaemons/com.distractionfree.blocklist-retry.plist "$STAGE/"
           cp shared/social-domains.txt "$STAGE/"
           cp shared/quotes.txt "$STAGE/"
           chmod +x "$STAGE"/*.sh
