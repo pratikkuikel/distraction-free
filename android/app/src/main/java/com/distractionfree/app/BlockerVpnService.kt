@@ -69,6 +69,14 @@ class BlockerVpnService : VpnService() {
     /** Schedule-gated IP backstop for TcpNat/UdpNat — see YoutubeIpBlocklist. */
     fun isYoutubeCdnBlockedNow(addr: ByteArray): Boolean =
         schedule.isSocialBlockedNow() && YoutubeIpBlocklist.isBlocked(addr)
+
+    /**
+     * Lets TcpNat/UdpNat record their IP-level blocks (DnsBypassBlocklist,
+     * YoutubeIpBlocklist) into the same diagnostic log as DNS decisions —
+     * those blocks happen below the DNS layer, so without this they'd be
+     * invisible even while working correctly.
+     */
+    fun logDiagnostic(line: String) = diagnosticLog.log(line)
     @Volatile private var upstreamDnsServers: List<InetAddress> = emptyList()
     @Volatile private var underlyingNetwork: Network? = null
 

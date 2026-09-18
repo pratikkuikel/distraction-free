@@ -28,8 +28,15 @@ class UdpNat(private val vpnService: BlockerVpnService, private val output: File
     private val executor = RelayExecutor.shared
 
     fun handle(packet: Ipv4UdpPacket) {
-        if (DnsBypassBlocklist.isBlocked(packet.dstAddr)) return // see DnsBypassBlocklist for why
-        if (vpnService.isYoutubeCdnBlockedNow(packet.dstAddr)) return // see YoutubeIpBlocklist for why
+        val dstIpString = packet.dstAddr.joinToString(".") { (it.toInt() and 0xFF).toString() }
+        if (DnsBypassBlocklist.isBlocked(packet.dstAddr)) {
+            vpnService.logDiagnostic("BLOCK doh-bypass-ip $dstIpString:${packet.dstPort} (udp)")
+            return // see DnsBypassBlocklist for why
+        }
+        if (vpnService.isYoutubeCdnBlockedNow(packet.dstAddr)) {
+            vpnService.logDiagnostic("BLOCK youtube-cdn-ip $dstIpString:${packet.dstPort} (udp)")
+            return // see YoutubeIpBlocklist for why
+        }
 
         val key = "${packet.srcAddr.joinToString(".") { (it.toInt() and 0xFF).toString() }}:${packet.srcPort}-" +
                    "${packet.dstAddr.joinToString(".") { (it.toInt() and 0xFF).toString() }}:${packet.dstPort}"

@@ -21,6 +21,9 @@
 
 instagram.com
 cdninstagram.com
+ig.me
+igcdn.com
+igtv.com
 tiktok.com
 tiktokcdn.com
 tiktokv.com

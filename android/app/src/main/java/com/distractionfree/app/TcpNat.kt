@@ -161,6 +161,8 @@ class TcpNat(private val vpnService: BlockerVpnService, private val output: File
 
     private val connections = ConcurrentHashMap<String, Connection>()
 
+    private fun ipString(addr: ByteArray) = addr.joinToString(".") { (it.toInt() and 0xFF).toString() }
+
     private fun keyFor(seg: TcpSegment) =
         "${seg.srcAddr.joinToString(".") { (it.toInt() and 0xFF).toString() }}:${seg.srcPort}-" +
         "${seg.dstAddr.joinToString(".") { (it.toInt() and 0xFF).toString() }}:${seg.dstPort}"
@@ -177,7 +179,16 @@ class TcpNat(private val vpnService: BlockerVpnService, private val output: File
 
         if (existing == null) {
             if (!seg.flagSyn) return // unknown connection, not a new one — drop
-            if (DnsBypassBlocklist.isBlocked(seg.dstAddr) || vpnService.isYoutubeCdnBlockedNow(seg.dstAddr)) {
+            if (DnsBypassBlocklist.isBlocked(seg.dstAddr)) {
+                vpnService.logDiagnostic("BLOCK doh-bypass-ip ${ipString(seg.dstAddr)}:${seg.dstPort} (tcp)")
+                val rst = TcpSegment.build(seg.dstAddr, seg.srcAddr, seg.dstPort, seg.srcPort,
+                    0, seg.seq + 1, syn = false, ackFlag = true, fin = false, rst = true, psh = false,
+                    window = 0, payload = ByteArray(0))
+                try { output.write(rst) } catch (e: Exception) {}
+                return
+            }
+            if (vpnService.isYoutubeCdnBlockedNow(seg.dstAddr)) {
+                vpnService.logDiagnostic("BLOCK youtube-cdn-ip ${ipString(seg.dstAddr)}:${seg.dstPort} (tcp)")
                 val rst = TcpSegment.build(seg.dstAddr, seg.srcAddr, seg.dstPort, seg.srcPort,
                     0, seg.seq + 1, syn = false, ackFlag = true, fin = false, rst = true, psh = false,
                     window = 0, payload = ByteArray(0))
