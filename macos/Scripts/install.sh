@@ -22,7 +22,13 @@ sudo cp "$REPO_ROOT/../shared/social-domains.txt" "$INSTALL_DIR/social-domains.t
 sudo cp "$REPO_ROOT/../shared/quotes.txt" "$INSTALL_DIR/quotes.txt"
 sudo chmod 755 "$INSTALL_DIR/dfdaemon" "$INSTALL_DIR/update-blocklist.sh" "$INSTALL_DIR/run-daemon.sh"
 sudo chmod 644 "$INSTALL_DIR/quotes.txt"
-sudo chmod 755 "$STATE_DIR" "$CONFIG_DIR" # menubar app (unprivileged) needs to write the social toggle + read stats
+sudo chmod 755 "$CONFIG_DIR"
+# STATE_DIR needs group-write, not just 755: the menubar app runs unprivileged
+# and writes social-toggle.json directly into it (daemon just reads/applies
+# it). 755 silently broke that write for years (try? swallowed the error) —
+# group-owned by staff (the default interactive-user group) + 775 fixes it.
+sudo chgrp staff "$STATE_DIR"
+sudo chmod 775 "$STATE_DIR"
 
 echo "Fetching initial blocklists..."
 sudo DF_CONFIG_DIR="$CONFIG_DIR" DF_INSTALL_DIR="$INSTALL_DIR" "$INSTALL_DIR/update-blocklist.sh"

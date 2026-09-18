@@ -5,6 +5,8 @@ import android.graphics.Color
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.TypedValue
 import android.widget.Button
 import android.widget.LinearLayout
@@ -26,6 +28,19 @@ class MainActivity : AppCompatActivity() {
     private lateinit var disableButton: Button
     private lateinit var quoteText: TextView
     private lateinit var schedule: ScheduleManager
+
+    // refresh() previously only ran once, in onResume — if it fired before
+    // the VPN service finished flipping isRunning, "Protection: starting..."
+    // would stay stuck forever even though enforcement was actually active.
+    // Polling keeps status/streak/stats live while the screen is visible.
+    private val refreshHandler = Handler(Looper.getMainLooper())
+    private val refreshIntervalMs = 3000L
+    private val refreshLoop = object : Runnable {
+        override fun run() {
+            refresh()
+            refreshHandler.postDelayed(this, refreshIntervalMs)
+        }
+    }
 
     private val quotes: List<String> by lazy {
         try {
@@ -69,7 +84,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        refresh()
+        refreshHandler.removeCallbacks(refreshLoop)
+        refreshHandler.post(refreshLoop)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        refreshHandler.removeCallbacks(refreshLoop)
     }
 
     private fun buildUi(): LinearLayout {

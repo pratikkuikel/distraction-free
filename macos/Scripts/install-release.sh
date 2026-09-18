@@ -28,7 +28,13 @@ sudo cp "$RELEASE_ROOT/social-domains.txt" "$INSTALL_DIR/social-domains.txt"
 sudo cp "$RELEASE_ROOT/quotes.txt" "$INSTALL_DIR/quotes.txt"
 sudo chmod 755 "$INSTALL_DIR/dfdaemon" "$INSTALL_DIR/update-blocklist.sh" "$INSTALL_DIR/run-daemon.sh"
 sudo chmod 644 "$INSTALL_DIR/quotes.txt"
-sudo chmod 755 "$STATE_DIR" "$CONFIG_DIR"
+sudo chmod 755 "$CONFIG_DIR"
+# STATE_DIR needs group-write, not just 755: the menubar app runs unprivileged
+# and writes social-toggle.json directly into it (daemon just reads/applies
+# it). Group-owned by staff (the default interactive-user group) + 775 lets
+# that write actually succeed.
+sudo chgrp staff "$STATE_DIR"
+sudo chmod 775 "$STATE_DIR"
 
 if [ ! -f "$CONFIG_DIR/always-on.txt" ]; then
     echo "Fetching initial blocklists..."
