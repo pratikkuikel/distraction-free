@@ -60,6 +60,7 @@ class BlockerVpnService : VpnService() {
     private lateinit var stats: Stats
     private lateinit var streak: StreakManager
     private lateinit var timeBack: TimeBack
+    private lateinit var diagnosticLog: DiagnosticLog
     private var isOnline = true
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var tcpNat: TcpNat? = null
@@ -77,6 +78,7 @@ class BlockerVpnService : VpnService() {
         stats = Stats(this)
         streak = StreakManager(this)
         timeBack = TimeBack(this)
+        diagnosticLog = DiagnosticLog(this)
         alwaysOnTrie = BlocklistRepository.buildAlwaysOnTrie(this)
         adultTrie = BlocklistRepository.buildAdultTrie(this)
         socialTrie = BlocklistRepository.buildSocialTrie(this)
@@ -175,6 +177,7 @@ class BlockerVpnService : VpnService() {
         if (alwaysOnTrie.isBlocked(domain)) {
             stats.recordBlockedAlwaysOn()
             if (adultTrie.isBlocked(domain)) timeBack.recordAdultBlock() else timeBack.recordOtherBlock()
+            diagnosticLog.log("BLOCK always-on $domain")
             writeResponse(packet, DnsMessage.nxdomainResponse(query), output)
             return
         }
@@ -187,6 +190,7 @@ class BlockerVpnService : VpnService() {
         if (schedule.isSocialBlockedNow() && socialTrie.isBlocked(domain)) {
             stats.recordBlockedSocial()
             if (youtubeTrie.isBlocked(domain)) timeBack.recordYoutubeBlock() else timeBack.recordSocialBlock()
+            diagnosticLog.log("BLOCK social $domain")
             writeResponse(packet, DnsMessage.nxdomainResponse(query), output)
             return
         }
@@ -195,13 +199,16 @@ class BlockerVpnService : VpnService() {
             stats.recordSafeSearchRewrite()
             val addr = SafeSearch.resolve(target)
             if (addr != null) {
+                diagnosticLog.log("SAFESEARCH $domain -> $target")
                 writeResponse(packet, DnsMessage.aRecordResponse(query, addr), output)
             } else {
+                diagnosticLog.log("SAFESEARCH $domain resolve failed, forwarding normally")
                 forward(packet, output) // fail open on resolve failure
             }
             return
         }
 
+        diagnosticLog.log("ALLOW $domain")
         forward(packet, output)
     }
 

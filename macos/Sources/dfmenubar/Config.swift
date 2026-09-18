@@ -7,6 +7,8 @@ enum Config {
     static let socialToggleFile = "\(stateDir)/social-toggle.json"
     static let streakFile = "\(stateDir)/streak.json"
     static let timeBackFile = "\(stateDir)/timeback.json"
+    static let loggingEnabledFile = "\(stateDir)/logging-enabled"
+    static let diagnosticLogFile = "\(stateDir)/diagnostic.log"
     static let installDir = ProcessInfo.processInfo.environment["DF_INSTALL_DIR"] ?? "/usr/local/opt/distraction-free"
     static let quotesPath = "\(installDir)/quotes.txt"
 

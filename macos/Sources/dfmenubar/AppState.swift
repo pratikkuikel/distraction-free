@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import AppKit
 
 final class AppState: ObservableObject {
     @Published var totalQueries = 0
@@ -19,6 +20,7 @@ final class AppState: ObservableObject {
     @Published var timeBackMinutes = 0
     @Published var dataBackMB: Double = 0
     @Published var todayQuote = ""
+    @Published var loggingEnabled = false
 
     private var timer: Timer?
     private static let quotes: [String] = {
@@ -72,6 +74,33 @@ final class AppState: ObservableObject {
         loadSocialToggle()
         loadStreak()
         loadTimeBack()
+        loggingEnabled = FileManager.default.fileExists(atPath: Config.loggingEnabledFile)
+    }
+
+    /// Opt-in only, local-only — see docs/privacy.md. Turning this on logs
+    /// per-query domain-level block/allow decisions (needed to actually
+    /// debug a "why was X blocked/allowed" report) to a 5MB-capped file;
+    /// off by default, and nothing is ever sent anywhere automatically.
+    func setLoggingEnabled(_ enabled: Bool) {
+        if enabled {
+            FileManager.default.createFile(atPath: Config.loggingEnabledFile, contents: nil)
+        } else {
+            try? FileManager.default.removeItem(atPath: Config.loggingEnabledFile)
+        }
+        loggingEnabled = enabled
+    }
+
+    /// Presents a save panel so the user can export the diagnostic log to
+    /// attach to a GitHub issue. No-op if logging was never turned on.
+    func exportLog() {
+        guard FileManager.default.fileExists(atPath: Config.diagnosticLogFile) else { return }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "distraction-free-log.txt"
+        panel.canCreateDirectories = true
+        if panel.runModal() == .OK, let url = panel.url {
+            try? FileManager.default.removeItem(at: url)
+            try? FileManager.default.copyItem(atPath: Config.diagnosticLogFile, toPath: url.path)
+        }
     }
 
     private func loadTimeBack() {

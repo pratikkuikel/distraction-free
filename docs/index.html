@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distraction Free — a local content blocker for macOS + Android</title>
+<meta name="description" content="Local-only, open-source content blocker for macOS and Android. No backend, no accounts, no tracking.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+<style>
+  :root {
+    --bg: #10132a;
+    --bg-card: #1b1f3b;
+    --bg-card-2: #232852;
+    --text: #f2f3fb;
+    --text-dim: #9ea3c4;
+    --accent: #6ee7c2;
+    --accent-2: #ff9f43;
+    --border: #2c3160;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 0 20px; }
+  header { padding: 72px 0 40px; text-align: center; }
+  header h1 { font-size: 2.4rem; margin: 0 0 10px; }
+  header p.tagline { color: var(--text-dim); font-size: 1.1rem; max-width: 560px; margin: 0 auto; }
+  .badge-row { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+  .badge { font-size: 0.8rem; padding: 5px 12px; border-radius: 999px; background: var(--bg-card-2); color: var(--text-dim); border: 1px solid var(--border); }
+
+  .downloads { display: flex; gap: 16px; justify-content: center; margin: 36px 0; flex-wrap: wrap; }
+  .dl-btn {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 24px; text-decoration: none; color: var(--text);
+    min-width: 220px; transition: border-color .15s, transform .15s;
+  }
+  .dl-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .dl-btn .icon { font-size: 1.8rem; }
+  .dl-btn .label-main { font-weight: 600; font-size: 1.05rem; }
+  .dl-btn .label-sub { color: var(--text-dim); font-size: 0.82rem; }
+
+  section { margin: 56px 0; }
+  h2 { font-size: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+  @media (max-width: 600px) { .cards { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 20px;
+  }
+  .card h3 { margin-top: 0; font-size: 1.05rem; }
+  .card p { color: var(--text-dim); margin-bottom: 0; font-size: 0.94rem; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 20px; }
+  @media (max-width: 600px) { .stat-grid { grid-template-columns: 1fr; } }
+  .stat { background: var(--bg-card-2); border-radius: 12px; padding: 18px; text-align: center; }
+  .stat .num { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat .label { color: var(--text-dim); font-size: 0.85rem; margin-top: 4px; }
+
+  .expect-list { list-style: none; padding: 0; margin: 20px 0 0; }
+  .expect-list li { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; gap: 12px; }
+  .expect-list li:last-child { border-bottom: none; }
+  .expect-list .mark { flex-shrink: 0; }
+
+  footer { text-align: center; padding: 50px 0 70px; color: var(--text-dim); font-size: 0.9rem; }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  code { background: var(--bg-card-2); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>🛡️ Distraction Free</h1>
+    <p class="tagline">A local, open-source content blocker for macOS and Android. No backend, no accounts, no telemetry — it runs entirely on your own device.</p>
+    <div class="badge-row">
+      <span class="badge">100% local</span>
+      <span class="badge">open source</span>
+      <span class="badge">no account needed</span>
+      <span class="badge">battery-tested</span>
+    </div>
+  </header>
+
+  <div class="downloads">
+    <a class="dl-btn" href="https://github.com/pratikkuikel/distraction-free/releases/latest/download/distraction-free-macos.zip">
+      <span class="icon">🍎</span>
+      <span>
+        <div class="label-main">Download for macOS</div>
+        <div class="label-sub">.zip · latest release</div>
+      </span>
+    </a>
+    <a class="dl-btn" href="https://github.com/pratikkuikel/distraction-free/releases/latest/download/distraction-free-android.apk">
+      <span class="icon">🤖</span>
+      <span>
+        <div class="label-main">Download for Android</div>
+        <div class="label-sub">.apk · sideload, no Play Store</div>
+      </span>
+    </a>
+  </div>
+  <p style="text-align:center; color:var(--text-dim); font-size:0.88rem;">
+    Full install steps (both take under 2 minutes): see the <a href="https://github.com/pratikkuikel/distraction-free#installation" style="color:var(--accent)">Installation guide</a>.
+  </p>
+
+  <section>
+    <h2>How it works, in plain terms</h2>
+    <p>
+      Most blockers live inside your browser — easy to disable, and useless against apps.
+      This one works differently: it sits at the <strong>network level</strong>, on your device, and
+      decides whether to let a connection through before it ever reaches an app or browser.
+    </p>
+    <div class="cards">
+      <div class="card">
+        <h3>🔒 Always blocked</h3>
+        <p>Adult content, gambling, piracy sites, and known ways to bypass this kind of filter (VPNs/proxies built for evasion). No toggle, no schedule — always on.</p>
+      </div>
+      <div class="card">
+        <h3>🌙 Scheduled</h3>
+        <p>Instagram, TikTok, X, Facebook, Reddit, YouTube, LinkedIn: hard-blocked 8pm–9am every night. Open the rest of the day, with a manual "block it now" switch if you want extra discipline.</p>
+      </div>
+      <div class="card">
+        <h3>💬 Always allowed</h3>
+        <p>WhatsApp, Messenger, Telegram, and Botim are never touched by the schedule — messaging stays messaging, not a distraction.</p>
+      </div>
+      <div class="card">
+        <h3>🔥 Streaks &amp; stats</h3>
+        <p>A day-streak counter, a rough (deliberately conservative) estimate of time/data you didn't spend on blocked sites, and a daily motivational quote — not to be cute, but to make the win visible.</p>
+      </div>
+    </div>
+    <p style="margin-top:20px;">
+      It's honest about its own limits: you have admin/root access to your own device, so nothing here
+      pretends to be unbreakable by you. The <strong>"Disable protection"</strong> button in the app is
+      a deliberate piece of friction — it logs the attempt and shows a 24-hour countdown that never
+      actually finishes. The only real way off is a manual uninstall, on purpose, outside the app.
+    </p>
+  </section>
+
+  <section>
+    <h2>How optimized is it?</h2>
+    <p>Battery and memory use were profiled directly, not assumed — a few concrete numbers:</p>
+    <div class="stat-grid">
+      <div class="stat"><div class="num">~0%</div><div class="label">CPU at idle (macOS filter), measured with <code>powermetrics</code></div></div>
+      <div class="stat"><div class="num">0</div><div class="label">Android wakelocks held by the app, per <code>batterystats</code></div></div>
+      <div class="stat"><div class="num">3</div><div class="label">scheduled wakeups/day (nightly toggle ×2, blocklist refresh ×1) — everything else is passive</div></div>
+    </div>
+    <p style="margin-top:20px;">
+      The filtering itself is a blocking network read that uses effectively zero CPU while idle — cost
+      tracks how much traffic you actually generate, not wall-clock time. A background 5-second UI
+      refresh timer on macOS was found and fixed during profiling (it now only polls while the menu is
+      actually open); on Android, a silent TCP-connection leak on dead peers was found and fixed so the
+      app doesn't slowly degrade over a long uptime. Both fixes shipped once verified, not just assumed.
+    </p>
+  </section>
+
+  <section>
+    <h2>What you can expect</h2>
+    <ul class="expect-list">
+      <li><span class="mark">✅</span><span><strong>It changes real network settings.</strong> macOS: your DNS points at a local resolver. Android: an always-on local VPN (not to any server — just how the OS lets an app filter traffic). That's the mechanism, not a side effect.</span></li>
+      <li><span class="mark">⚠️</span><span><strong>You'll see OS security warnings once.</strong> Unsigned by an Apple Developer ID, not on the Play Store — both cost money/accounts this project skips on purpose. The install steps handle this for you.</span></li>
+      <li><span class="mark">🚫</span><span><strong>Nothing phones home.</strong> No account, no server, no analytics. The only network calls it makes on its own are fetching public blocklists and resolving DNS.</span></li>
+      <li><span class="mark">📊</span><span><strong>The stats are honest estimates, not measurements.</strong> "Time/data saved" is a small, clearly-labeled flat credit per blocked attempt — illustrative, like Brave's own bandwidth-saved counter, not a real measurement.</span></li>
+      <li><span class="mark">🐞</span><span><strong>It's an actively maintained side project, not a polished commercial product.</strong> Found a bug? <a href="https://github.com/pratikkuikel/distraction-free/issues/new/choose" style="color:var(--accent)">File an issue</a> — there's a built-in diagnostic log you can export and attach.</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>
+      <a href="https://github.com/pratikkuikel/distraction-free">Source on GitHub</a> ·
+      <a href="https://github.com/pratikkuikel/distraction-free/blob/main/docs/privacy.md">Privacy</a> ·
+      <a href="https://github.com/pratikkuikel/distraction-free/blob/main/README.md#uninstall">Uninstall</a> ·
+      <a href="https://github.com/pratikkuikel/distraction-free/blob/main/CONTRIBUTING.md">Contributing</a>
+    </p>
+    <p>Open source, <a href="https://github.com/pratikkuikel/distraction-free/blob/main/LICENSE">MIT-licensed</a>. Built by one person to solve one person's problem.</p>
+  </footer>
+
+</div>
+</body>
+</html>

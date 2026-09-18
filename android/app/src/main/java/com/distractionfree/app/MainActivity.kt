@@ -2,6 +2,7 @@ package com.distractionfree.app
 
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
@@ -10,10 +11,12 @@ import android.os.Looper
 import android.util.TypedValue
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
@@ -27,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var socialToggleButton: Button
     private lateinit var disableButton: Button
     private lateinit var quoteText: TextView
+    private lateinit var loggingSwitch: Switch
     private lateinit var schedule: ScheduleManager
 
     // refresh() previously only ran once, in onResume — if it fired before
@@ -172,6 +176,31 @@ class MainActivity : AppCompatActivity() {
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dp(12) })
 
+        loggingSwitch = Switch(this).apply {
+            text = "Diagnostic logging"
+            setTextColor(Color.WHITE)
+            isChecked = AppPaths.loggingEnabledFile(this@MainActivity).exists()
+            setOnCheckedChangeListener { _, checked -> setLoggingEnabled(checked) }
+        }
+        root.addView(loggingSwitch, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(24) })
+
+        val loggingNote = TextView(this).apply {
+            text = "For troubleshooting a bug report — logs which domains get blocked/allowed. Off by default, stays on this phone."
+            setTextColor(Color.parseColor("#888888"))
+            textSize = 11f
+        }
+        root.addView(loggingNote)
+
+        val exportLogButton = Button(this).apply {
+            text = "Export log"
+            setOnClickListener { exportLog() }
+        }
+        root.addView(exportLogButton, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(8) })
+
         val note = TextView(this).apply {
             text = "WhatsApp, Messenger, Telegram, and Botim always work — this only filters adult, gambling, piracy, VPN/proxy-bypass, and (on schedule) social feed content. Blocklist auto-updates daily at 4am."
             setTextColor(Color.parseColor("#888888"))
@@ -247,6 +276,28 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }.start()
+    }
+
+    /** Opt-in only, local-only — see docs/privacy.md. */
+    private fun setLoggingEnabled(enabled: Boolean) {
+        val file = AppPaths.loggingEnabledFile(this)
+        if (enabled) file.createNewFile() else file.delete()
+    }
+
+    /** Shares the diagnostic log via any installed app (Files, email, GitHub, etc.) to attach to an issue. */
+    private fun exportLog() {
+        val file = AppPaths.diagnosticLogFile(this)
+        if (!file.exists()) {
+            Toast.makeText(this, "No log yet — turn on diagnostic logging first, then reproduce the issue.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val uri: Uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(intent, "Export diagnostic log"))
     }
 
     private fun refresh() {

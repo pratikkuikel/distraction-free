@@ -62,6 +62,24 @@ struct MenubarContentView: View {
 
             Divider()
 
+            Toggle(isOn: Binding(
+                get: { state.loggingEnabled },
+                set: { state.setLoggingEnabled($0) }
+            )) {
+                Text("Diagnostic logging")
+            }
+            .toggleStyle(.switch)
+            Text("For troubleshooting a bug report — logs which domains get blocked/allowed. Off by default, stays on this Mac.")
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button("Export log…") {
+                state.exportLog()
+            }
+
+            Divider()
+
             if let hours = state.disableHoursRemaining {
                 Text("Disable requested — \(hours)h remaining")
                     .font(.system(size: 11))

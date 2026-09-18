@@ -1,5 +1,7 @@
 # distraction-free
 
+**[Download / website →](https://pratikkuikel.github.io/distraction-free/)**
+
 Local-only, open-source content blocker for macOS + Android. No backend, no accounts, no sync.
 Blocks adult content, gambling, piracy, and VPN/proxy/DNS-bypass at the DNS level, always-on;
 social media is blocked nightly (8pm–9am) with a manual daytime toggle; communication apps
@@ -75,6 +77,11 @@ never block WhatsApp).
   deliberately conservative flat credit per blocked connection attempt (~10-20s, ~1-2MB depending on
   category), not derived from anything actually measured. Same spirit as Brave/uBlock's own
   bandwidth-saved counters.
+- **There's an opt-in diagnostic log for bug reports.** Off by default. Both apps have a "Diagnostic
+  logging" toggle + "Export log" action — turn it on, reproduce a problem, export the log, attach it to
+  a [bug report](.github/ISSUE_TEMPLATE/bug_report.yml). It's local-only until you explicitly export
+  it, and only ever records domain-level block/allow decisions, never full URLs — see
+  `docs/privacy.md`.
 
 ## Installation
 
@@ -122,6 +129,13 @@ are verified working on both platforms. Full page-load testing on Android was co
 dev sandbox's emulator networking (see commit history / session notes) rather than the app itself —
 worth a real-device pass before relying on it daily.
 
+## Contributing
+
+Bug reports, feature ideas, and PRs are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to
+build from source, what "tested" means for a project with no automated test suite yet, and the
+project's few real conventions. [File a bug](.github/ISSUE_TEMPLATE/bug_report.yml) with reproduction
+steps (and an exported diagnostic log, if relevant) rather than a one-line "it's broken."
+
 ## Uninstall
 
 The in-app "Disable protection" button is deliberately a fake 24h countdown that never completes —
@@ -144,3 +158,7 @@ sudo rm -f /usr/local/bin/dfmenubar
 **Android:** Settings → Apps → Distraction Free → Uninstall. (Or, to keep the app but stop the VPN
 immediately instead of waiting on the fake countdown, force-stop it from the same screen — a genuine
 OS-level override, same as macOS root access, that this app can't and shouldn't try to prevent.)
+
+## License
+
+[MIT](LICENSE).

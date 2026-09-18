@@ -40,6 +40,25 @@ Android, the network's own configured DNS servers, discovered the same way. This
 introduce a new third party into your DNS path — it filters locally, then defers to whatever
 resolver you were already trusting.
 
+## Diagnostic logging (opt-in, off by default)
+
+There's a "Diagnostic logging" toggle in both apps, meant only for troubleshooting a specific bug
+report — reproducing "why is X blocked/allowed" without it means guessing. When turned on, it logs
+each DNS query's **domain name and the decision made** (blocked/allowed/SafeSearch-rewritten) with a
+timestamp, to a file capped at 5MB (oldest entries dropped once full — it rotates, not accumulates
+forever). It is:
+
+- **Off by default.** Nothing is logged unless you explicitly turn it on.
+- **Local only.** The log file never leaves the device on its own — there's an "Export log" action
+  that hands you the file directly, for you to attach to a GitHub issue yourself, but the app never
+  uploads or transmits it anywhere automatically.
+- **Domain-level, not content-level.** It records the hostname queried (e.g. `instagram.com`), not
+  URLs, page content, or anything about what you did on a site once connected.
+- **Easy to verify what's in it.** It's a plain text file — read it yourself before attaching it
+  anywhere if you want to confirm exactly what it contains.
+
+Turn it back off when you're done — there's no reason to leave it running day to day.
+
 ## Why category counts instead of full logs
 
 A false-positive report or a "why was this blocked" debugging session doesn't need a URL history —

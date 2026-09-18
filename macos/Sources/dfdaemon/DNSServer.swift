@@ -11,6 +11,7 @@ final class DNSServer {
     private let stats = Stats()
     private let streak = Streak()
     private let timeBack = TimeBack()
+    private let diagnosticLog = DiagnosticLog()
 
     private var listenSocket: Int32 = -1
     // Concurrent so one slow query (a cold SafeSearch lookup, a sluggish
@@ -63,6 +64,7 @@ final class DNSServer {
         if alwaysOnTrie.isBlocked(domain) {
             stats.recordBlockedAlwaysOn()
             if adultTrie.isBlocked(domain) { timeBack.recordAdultBlock() } else { timeBack.recordOtherBlock() }
+            diagnosticLog.log("BLOCK always-on \(domain)")
             respond(DNSMessage.nxdomainResponse(for: query), to: clientAddr, addrLen: addrLen)
             return
         }
@@ -75,6 +77,7 @@ final class DNSServer {
         if schedule.isSocialBlockedNow(), socialTrie.isBlocked(domain) {
             stats.recordBlockedSocial()
             if youtubeTrie.isBlocked(domain) { timeBack.recordYoutubeBlock() } else { timeBack.recordSocialBlock() }
+            diagnosticLog.log("BLOCK social \(domain)")
             respond(DNSMessage.nxdomainResponse(for: query), to: clientAddr, addrLen: addrLen)
             return
         }
@@ -82,13 +85,16 @@ final class DNSServer {
         if let target = Config.safeSearchTargets[domain] {
             stats.recordSafeSearchRewrite()
             if let addr = resolveCached(target) {
+                diagnosticLog.log("SAFESEARCH \(domain) -> \(target)")
                 respond(DNSMessage.aRecordResponse(for: query, address: addr), to: clientAddr, addrLen: addrLen)
             } else {
+                diagnosticLog.log("SAFESEARCH \(domain) resolve failed, forwarding normally")
                 forward(query: query, to: clientAddr, addrLen: addrLen) // fail open on resolve failure
             }
             return
         }
 
+        diagnosticLog.log("ALLOW \(domain)")
         forward(query: query, to: clientAddr, addrLen: addrLen)
     }
 

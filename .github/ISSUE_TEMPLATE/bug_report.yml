@@ -1,0 +1,87 @@
+name: Bug report
+description: Something is broken — a site wrongly blocked/allowed, a crash, high battery use, etc.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. The more precise the reproduction steps, the faster
+        this can actually get fixed — vague reports ("it doesn't work") are hard to act on.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - Android
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: The release tag you're running (e.g. v0.3.0) — check the GitHub Release you downloaded, or the app's About/version info if shown.
+      placeholder: v0.3.0
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      description: e.g. macOS 15.1, or Android 14 / device model
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps, as exact as possible. "Sometimes it happens" is much harder to fix than "every time I do X then Y."
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: log
+    attributes:
+      label: Diagnostic log
+      description: |
+        For anything involving a wrongly blocked/allowed site, a connectivity issue, or a crash: turn on
+        **Diagnostic logging** in the app, reproduce the issue, then use **Export log** and attach the
+        file below. It only records which domains were blocked/allowed/rewritten (plus timestamps) —
+        never full URLs or browsing history. See docs/privacy.md.
+      options:
+        - label: I attached the diagnostic log (or explained why I couldn't)
+
+  - type: textarea
+    id: log-attachment
+    attributes:
+      label: Attach the log here
+      description: Drag and drop the exported log file into this box.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, related issues, things you already tried, etc.
