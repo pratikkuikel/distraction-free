@@ -94,6 +94,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Refreshes the always-on state the card shows (the user may have just
+        // flipped it in system settings). Only once VPN consent exists —
+        // before that, starting the service would just leave a notification
+        // with no VPN behind it.
+        if (VpnService.prepare(this) == null) {
+            startService(Intent(this, BlockerVpnService::class.java).apply {
+                action = BlockerVpnService.ACTION_REFRESH_NOTIFICATION
+            })
+        }
         refreshHandler.removeCallbacks(refreshLoop)
         refreshHandler.post(refreshLoop)
     }
@@ -256,11 +265,10 @@ class MainActivity : AppCompatActivity() {
     private fun isIgnoringBatteryOptimizations(): Boolean =
         getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
 
-    // The system's own always-on-VPN choice — readable by any app. Compared
-    // against our package so another VPN app being always-on doesn't count.
-    private fun isAlwaysOnVpn(): Boolean = try {
-        Settings.Secure.getString(contentResolver, "always_on_vpn_app") == packageName
-    } catch (e: Exception) { false }
+    // Recorded by the VPN service (only it can ask Android) — see
+    // BlockerVpnService.recordAlwaysOnState.
+    private fun isAlwaysOnVpn(): Boolean =
+        getSharedPreferences("vpn_state", MODE_PRIVATE).getBoolean("always_on", false)
 
     @SuppressLint("BatteryLife")
     private fun requestBatteryExemption() {

@@ -109,6 +109,7 @@ class BlockerVpnService : VpnService() {
             }
             ACTION_REFRESH_NOTIFICATION -> {
                 if (running.get()) {
+                    recordAlwaysOnState()
                     val nm = getSystemService(NotificationManager::class.java)
                     nm.notify(NOTIFICATION_ID, buildNotification())
                 } else {
@@ -142,8 +143,19 @@ class BlockerVpnService : VpnService() {
         AlarmScheduler.scheduleNextTransitions(this)
         BlocklistUpdateScheduler.scheduleNext(this)
         ServiceWatchdog.scheduleHeartbeat(this)
+        recordAlwaysOnState()
 
         thread(name = "df-vpn-loop") { runPacketLoop() }
+    }
+
+    // The system's always-on-VPN setting isn't readable by ordinary apps
+    // (Settings.Secure blocks it) — only the VpnService itself can ask, so
+    // record it here for the UI to show. MainActivity pings this on every
+    // open so it never goes stale.
+    private fun recordAlwaysOnState() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getSharedPreferences("vpn_state", MODE_PRIVATE).edit().putBoolean("always_on", isAlwaysOn).apply()
+        }
     }
 
     private fun runPacketLoop() {
