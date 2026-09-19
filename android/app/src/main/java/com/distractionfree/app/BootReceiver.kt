@@ -4,25 +4,25 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.net.VpnService
-import android.os.Build
 
 /**
- * Restarts protection after reboot — but only if VPN permission was already
- * granted (Android requires the user to have approved it at least once
- * in-app; a boot receiver can't silently obtain that consent).
+ * Restarts protection after reboot or after the app itself is updated (an
+ * update kills the running service and nothing else would bring it back) —
+ * but only if VPN permission was already granted (Android requires the user
+ * to have approved it at least once in-app; a receiver can't silently obtain
+ * that consent).
  */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        when (intent.action) {
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_REPLACED,
+            "android.intent.action.QUICKBOOT_POWERON",
+            "com.htc.intent.action.QUICKBOOT_POWERON" -> {}
+            else -> return
+        }
         if (VpnService.prepare(context) != null) return // permission not (still) granted
 
-        val serviceIntent = Intent(context, BlockerVpnService::class.java).apply {
-            action = BlockerVpnService.ACTION_START
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(serviceIntent)
-        } else {
-            context.startService(serviceIntent)
-        }
+        ServiceWatchdog.startService(context)
     }
 }

@@ -67,9 +67,34 @@ installed package name via **Settings → Apps → [app] → Advanced → App de
 `AppExemptions.communicationPackages` to match.
 
 **Reboot recovery**
-`BootReceiver` restarts the VPN automatically after reboot, but only if VPN permission was already
-granted once — Android requires that consent to have happened interactively at least once; it can't
-be silently re-granted by a boot receiver.
+`BootReceiver` restarts the VPN automatically after reboot (and after the app itself is updated,
+which otherwise kills it), but only if VPN permission was already granted once — Android requires
+that consent to have happened interactively at least once; it can't be silently re-granted by a
+boot receiver.
+
+**Protection stops when I close / swipe away the app**
+Closing the app is supposed to do nothing — the VPN runs as a foreground service. Some phone makers
+(Xiaomi, Oppo, Vivo, OnePlus, Samsung's "sleeping apps", …) kill background apps aggressively anyway,
+and Android itself doesn't reliably restart a killed service. Three layers keep it running, in order
+of how much you need to do:
+
+1. **Automatic (nothing to do):** a watchdog alarm checks every ~5 minutes that the VPN is up and
+   restarts it if not, and a swipe-away triggers an immediate re-check (usually back within seconds).
+   It survives the app's process being killed.
+2. **Allow background running:** the app asks once for the "ignore battery optimizations" exemption
+   (there's a button on the main screen if you dismissed it). This stops most phone-maker battery
+   managers from killing it in the first place. On some phones you also need to allow **Autostart**
+   for the app in the phone's own security/battery settings — see [dontkillmyapp.com](https://dontkillmyapp.com)
+   for your model, and lock the app in the recents screen if your phone offers that.
+3. **Always-on VPN (recommended):** **Settings → Network & internet → VPN → Distraction Free (⚙) →
+   Always-on VPN**, plus **Block connections without VPN**. The main screen shows whether it's on. If
+   protection ever does stop, the phone then has no internet at all until it's back, instead of
+   silently running unprotected.
+
+**The one thing no app can survive:** a real **Force stop** (Settings → Apps → Distraction Free →
+Force stop, or a phone-maker "clean/close all" that uses it). Android cancels every alarm and blocks
+every broadcast to a force-stopped app until you open it again by hand — this holds even with
+Always-on VPN, which we verified. Opening the app restarts protection immediately.
 
 ## Both platforms
 

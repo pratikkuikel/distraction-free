@@ -1,5 +1,6 @@
 package com.distractionfree.app
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -8,6 +9,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.TypedValue
 import android.widget.Button
 import android.widget.LinearLayout
@@ -23,6 +26,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var streakText: TextView
     private lateinit var statusText: TextView
+    private lateinit var keepAliveText: TextView
+    private lateinit var batteryButton: Button
+    private lateinit var alwaysOnButton: Button
     private lateinit var statsCard: LinearLayout
     private lateinit var statBlocked: TextView
     private lateinit var statSaved: TextView
@@ -125,6 +131,32 @@ class MainActivity : AppCompatActivity() {
         statusText = title("Starting...", 16f)
         root.addView(statusText)
 
+        // What keeps protection alive when Android/the phone maker tries to
+        // stop background apps — see ServiceWatchdog for the in-app half.
+        val keepAliveCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor("#2A2F52"))
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        }
+        keepAliveText = TextView(this).apply {
+            setTextColor(Color.WHITE)
+            textSize = 13f
+        }
+        keepAliveCard.addView(keepAliveText)
+        batteryButton = Button(this).apply {
+            text = "Allow background running"
+            setOnClickListener { requestBatteryExemption() }
+        }
+        keepAliveCard.addView(batteryButton)
+        alwaysOnButton = Button(this).apply {
+            text = "Set up Always-on VPN"
+            setOnClickListener { startActivity(Intent(Settings.ACTION_VPN_SETTINGS)) }
+        }
+        keepAliveCard.addView(alwaysOnButton)
+        root.addView(keepAliveCard, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(8) })
+
         statsCard = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setBackgroundColor(Color.parseColor("#2A2F52"))
@@ -220,6 +252,36 @@ class MainActivity : AppCompatActivity() {
 
     private fun dp(value: Int): Int =
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), resources.displayMetrics).toInt()
+
+    private fun isIgnoringBatteryOptimizations(): Boolean =
+        getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
+
+    // The system's own always-on-VPN choice — readable by any app. Compared
+    // against our package so another VPN app being always-on doesn't count.
+    private fun isAlwaysOnVpn(): Boolean = try {
+        Settings.Secure.getString(contentResolver, "always_on_vpn_app") == packageName
+    } catch (e: Exception) { false }
+
+    @SuppressLint("BatteryLife")
+    private fun requestBatteryExemption() {
+        try {
+            startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
+        } catch (e: Exception) {
+            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+        }
+    }
+
+    // Asked once, automatically, the first time protection is actually
+    // running and the user is looking at the app — after that the card's
+    // button is the way back. Not asked at launch so it doesn't stack on top
+    // of the notification/VPN permission dialogs.
+    private fun maybePromptBatteryExemption() {
+        val prefs = getSharedPreferences("prompts", MODE_PRIVATE)
+        if (prefs.getBoolean("asked_battery_exemption", false)) return
+        if (!BlockerVpnService.isRunning || !hasWindowFocus() || isIgnoringBatteryOptimizations()) return
+        prefs.edit().putBoolean("asked_battery_exemption", true).apply()
+        requestBatteryExemption()
+    }
 
     private fun requestVpnPermissionAndStart() {
         val intent = VpnService.prepare(this)
@@ -331,6 +393,18 @@ class MainActivity : AppCompatActivity() {
             val hoursLeft = DisableLog.hoursRemaining(this@MainActivity)
             if (hoursLeft != null) append("Disable requested — $hoursLeft h remaining (never actually completes)")
         }
+
+        val batteryOk = isIgnoringBatteryOptimizations()
+        val alwaysOn = isAlwaysOnVpn()
+        keepAliveText.text = buildString {
+            append(if (batteryOk) "✓ Allowed to run in the background\n"
+                   else "⚠ Android may stop protection when the app is closed — allow background running\n")
+            append(if (alwaysOn) "✓ Always-on VPN is on (restarts after reboot, blocks internet if protection stops)"
+                   else "○ Always-on VPN is off — turn it on so protection restarts after a reboot and the phone has no internet if it's ever stopped")
+        }
+        batteryButton.visibility = if (batteryOk) android.view.View.GONE else android.view.View.VISIBLE
+        alwaysOnButton.visibility = if (alwaysOn) android.view.View.GONE else android.view.View.VISIBLE
+        maybePromptBatteryExemption()
 
         socialToggleButton.text = if (schedule.readManualToggle()) "Unblock social media" else "Block social media now"
         // Only shown/usable when it can actually do something — during the

@@ -9,6 +9,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Lets the app ask (once, via a system dialog the user approves) to be
+         exempt from battery optimization, so OEM battery managers stop
+         killing the always-on VPN service in the background. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <!-- Without this, getPackageInfo() on these apps throws
          NameNotFoundException even when they're installed (Android 11+
@@ -58,6 +62,9 @@
             android:enabled="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
 
@@ -67,6 +74,10 @@
 
         <receiver
             android:name=".BlocklistUpdateReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".WatchdogReceiver"
             android:exported="false" />
 
         <!-- Lets the "Export log" button share the diagnostic log file

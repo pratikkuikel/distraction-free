@@ -141,6 +141,7 @@ class BlockerVpnService : VpnService() {
         isRunning = true
         AlarmScheduler.scheduleNextTransitions(this)
         BlocklistUpdateScheduler.scheduleNext(this)
+        ServiceWatchdog.scheduleHeartbeat(this)
 
         thread(name = "df-vpn-loop") { runPacketLoop() }
     }
@@ -365,6 +366,15 @@ class BlockerVpnService : VpnService() {
             .setContentIntent(pending)
             .setOngoing(true)
             .build()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // Many OEM skins kill the whole process when the app is swiped out of
+        // recents. Ask the watchdog to check back in moments from now — an
+        // alarm outlives the process, so if we get killed it restarts us; if
+        // we're still running it's a no-op that just re-arms the heartbeat.
+        ServiceWatchdog.scheduleHeartbeat(this, ServiceWatchdog.QUICK_CHECK_MS)
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
