@@ -83,9 +83,11 @@ of how much you need to do:
    It survives the app's process being killed.
 2. **Allow background running:** the app asks once for the "ignore battery optimizations" exemption
    (there's a button on the main screen if you dismissed it). This stops most phone-maker battery
-   managers from killing it in the first place. On some phones you also need to allow **Autostart**
-   for the app in the phone's own security/battery settings — see [dontkillmyapp.com](https://dontkillmyapp.com)
-   for your model, and lock the app in the recents screen if your phone offers that.
+   managers from killing it in the first place. On some phones you also need to allow **Autostart /
+   Auto launch** for the app in the phone's own security/battery settings (verified on a Realme: without
+   it the VPN was not restarted after an app update until the app was opened). See
+   [dontkillmyapp.com](https://dontkillmyapp.com) for your model, and lock the app in the recents screen
+   if your phone offers that, so "Close all" skips it.
 3. **Always-on VPN (recommended):** **Settings → Network & internet → VPN → Distraction Free (⚙) →
    Always-on VPN**, plus **Block connections without VPN**. The main screen shows whether it's on. If
    protection ever does stop, the phone then has no internet at all until it's back, instead of

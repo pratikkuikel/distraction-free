@@ -110,14 +110,46 @@ instead. Both do the same install; the `.pkg` just does it without opening Termi
    phone itself (or transfer it over).
 2. Open the downloaded file. Android will prompt to allow installs from that source ("Install unknown
    apps") — allow it, then install.
-3. Open the app and grant the VPN permission when prompted — this is what lets it filter traffic.
-4. For real bypass-resistance, go to **Settings → VPN → Distraction Free → Always-on VPN + Block
-   connections without VPN**. This is a genuine OS-level guarantee (the app can't fake it) that the
-   phone has no network access at all unless this VPN is running.
-5. Every release is signed with the same key, so installing a new version over an old one updates in
+3. Open the app. Allow **notifications** if asked (Android 13+; the VPN's status notification is what
+   keeps it alive as a foreground service), then grant the **VPN permission** — this is what lets it
+   filter traffic.
+4. Tap **Allow** on "Let app always run in background?" (or use the **Allow background running**
+   button on the main screen). This exempts it from battery optimization, which is what stops most
+   phones from killing it once you close the app.
+5. Turn on **Always-on VPN** and **Block connections without VPN**: **Settings → Network & internet →
+   VPN → Distraction Free (⚙)** (the **Set up Always-on VPN** button on the main screen opens the
+   VPN settings). This is a genuine OS-level guarantee (the app can't fake it): the VPN starts with
+   the phone, and if protection ever stops the phone has no internet at all instead of silently
+   running unprotected.
+6. **Phone-maker settings (Xiaomi/Redmi/POCO, Oppo, Realme, Vivo, OnePlus, Huawei, Samsung, …):**
+   these skins add their own background-app killer on top of Android. In the phone's Settings (or
+   its Security / Battery / Phone Manager app), find the entries for this app and:
+   - allow **Autostart / Auto launch** (without it the app may not restart after a reboot or an
+     update — seen on a Realme),
+   - set battery use to **No restrictions / Allow background activity**, and on Samsung add it to
+     **Never sleeping apps**,
+   - **lock it in the recents screen** (long-press or pull down its card, tap the lock) so "Close all"
+     skips it.
+
+   Exact names vary by model — [dontkillmyapp.com](https://dontkillmyapp.com) has step-by-step
+   instructions per manufacturer.
+7. Check the card on the app's main screen: when steps 4 and 5 are done it shows **✓ Allowed to run in
+   the background** and **✓ Always-on VPN is on**. Anything still missing shows a button to fix it.
+8. Every release is signed with the same key, so installing a new version over an old one updates in
    place and keeps your streak/stats data. (Only switching between a locally-built debug APK and a
    signed release build ever requires a one-time uninstall, since Android treats a different signing
    key as a different app.)
+
+**How it stays running:** the VPN is a foreground service, so closing or swiping away the app doesn't
+stop it. If a phone-maker cleaner kills the process anyway, a watchdog alarm restarts the VPN within
+seconds (immediately after a swipe-away, otherwise on a 5-minute check), and it also restarts after a
+reboot or an app update. See [troubleshooting](docs/troubleshooting.md#android) for details.
+
+**The one thing that can stop it:** a real **Force stop** (Settings → Apps → Distraction Free → Force
+stop, or a "clear all" that uses it). Android then blocks everything for that app until you open it
+again by hand — no app can get around that, not even with Always-on VPN. With step 5 done, the phone
+just has no internet until you reopen the app, so it fails closed. Opening the app restarts protection
+immediately.
 
 New releases build automatically from a git tag (`vX.Y.Z`) via
 [`.github/workflows/release.yml`](.github/workflows/release.yml).
@@ -128,8 +160,8 @@ New releases build automatically from a git tag (`vX.Y.Z`) via
 to install the LaunchDaemon and point your Mac's DNS at it).
 
 **Android:** open `android/` in Android Studio, build and install the debug APK, grant the VPN
-permission when prompted, and — for real bypass-resistance — enable **Settings → VPN → Always-on VPN
-+ Block connections without VPN** for it manually.
+permission when prompted, then follow steps 4–7 of the Android install above (background running,
+Always-on VPN + Block connections without VPN, phone-maker Autostart settings) so it keeps running.
 
 ## Status
 
