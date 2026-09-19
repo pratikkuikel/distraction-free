@@ -1,6 +1,6 @@
 # <img src="docs/logo.png" alt="" width="32" height="32" valign="middle"> distraction-free
 
-**[Download / website →](https://pratikkuikel.github.io/distraction-free/)**
+**[Download / website →](https://pratikkuikel.github.io/distraction-free/)** · **[Product Hunt →](https://www.producthunt.com/products/distraction-free?launch=distraction-free)**
 
 Local-only, open-source content blocker for macOS + Android. No backend, no accounts, no sync.
 Blocks adult content, gambling, piracy, and VPN/proxy/DNS-bypass at the DNS level, always-on;
